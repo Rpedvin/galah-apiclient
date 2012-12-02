@@ -31,6 +31,6 @@ this.
 
 ## License
 
-The Galah API Client is licensed separately from Galah. It is licensed under the
-[GNU GPLv3](http://www.gnu.org/licenses/gpl-3.0.html), and maintains a separate
-list of contributers.
+The Galah API Client is licensed separately from Galah. It is "licensed" under
+[The Unlicense](http://www.unlicense.org). All documentation for the API client
+has also been placed under The Unlicense.
