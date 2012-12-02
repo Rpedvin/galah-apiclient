@@ -12,7 +12,7 @@ License
 -------
 
 This documentation is free and open as specified by
-`The Unlicense <http://www.unlicense.org>`.
+`The Unlicense <http://www.unlicense.org>`_.
 
 Using the API
 -------------

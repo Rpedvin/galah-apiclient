@@ -19,6 +19,17 @@ directory.
 $ ln -s /usr/local/bin/api_client.py GALAH/API/ROOT/api_client.py
 ```
 
+You'll want to configure the API Client as well so that it knows where the
+Galah server is and your login information. Check out the 
+[documentation](https://galah-api.readthedocs.org/en/latest/) for information
+on how to do this.
+
+## Documentation
+
+Check out the
+[documentation online](https://galah-api.readthedocs.org/en/latest/) for
+information on configuring the API Client and using the various commands.
+
 ## License
 
 The Galah API Client is licensed separately from Galah. It is "licensed" under
