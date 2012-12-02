@@ -6,28 +6,18 @@ the official API client maintained alongside Galah.
 
 ## How to Install
 
-You can use `pip` to install the API client, however, this may not be an option
-available to you if you don't have root privileges on your system, so you may
-also download a self-contained tarbell. Instructions for doing both are included
-below.
-
-### Installing with pip
-
-This is by far the easiest installation method. If you already have `pip`
-installed (which is a package manager for Python prjoects), just run
-
-```shell
-$ pip install galah-apiclient
-```
-
-If you don't have pip, [you'll have to install it first](https://www.google.com/search?q=python+how+to+get+pip).
-
-### Installing from tarbell
-
 Go to the [Downloads](/brownhead/galah/downloads) section and download the most
 recent release tarbell. Unpack the archive wherever you'd like and execute the
 file `api_client.py` normally. You do not need any elevated permissions to do
 this.
+
+If you'd like, you can add a symlink in one of the directories in your path
+(such as `/usr/local/bin`) so you can execute the API client from any working
+directory.
+
+```shell
+$ ln -s /usr/local/bin/api_client.py GALAH/API/ROOT/api_client.py
+```
 
 ## License
 
@@ -38,3 +28,6 @@ has also been placed under The Unlicense.
 In short, feel free to use the code and documentation in this repository for any
 purpose without restriction (though keep in mind this definitely does not apply
 to the main Galah repository).
+
+Also, feel free to create your own version of the API Client! If you do, I'd
+gladly put a link up in this repo.
