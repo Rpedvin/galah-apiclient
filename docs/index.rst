@@ -56,7 +56,8 @@ options are listed in this example):
         "galah_home": "~/.galah",
         "user": "myemail@school.edu",
         "password": "plaintext password",
-        "use_oauth": false
+        "use_oauth": false,
+        "verify_certificate": true
     }
 
 **Make sure to set the permissions of your api_client.config file to 600 so
@@ -75,6 +76,10 @@ the user you will log into google with.
 Also make sure to replace ``www.galahserver.com`` with the address of your
 institution's Galah web server. You may also want to use *https* vs *http*
 depending on your institution's installation.
+
+You can set `verify_certificate` to false if you want to ignore an invalid SSL
+certificate provided by Galah. Only do this if the Galah web server does not
+have a certificate signed by a CA.
 
 ``galah_home`` is where the ``tmp/`` directory will be stored, and other
 directories and files may find there way in there as well.
