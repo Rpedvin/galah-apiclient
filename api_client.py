@@ -10,7 +10,8 @@ session = requests.session()
 config = {
     "galah_host": "http://localhost:5000",
     "galah_home": "~/.galah",
-    "use_oauth": False
+    "use_oauth": False,
+    "verify_certificate": True
 }
 
 class PermissionError(Exception):
@@ -188,7 +189,8 @@ def _call(interactive, api_name, *args, **kwargs):
     request = session.post(
         config["galah_host"] + "/api/call",
         data = to_json(form_call(api_name, *args, **kwargs)),
-        headers = {"Content-Type": "application/json"}
+        headers = {"Content-Type": "application/json"},
+        verify = config["verify_certificate"]
     )
     
     # Will throw a requests.URLError or requests.HTTPError here if either
