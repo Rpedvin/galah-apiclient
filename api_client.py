@@ -420,7 +420,13 @@ def main():
             with open(config_file_path) as config_file: 
                 config.update(parse_configuration(config_file))
         except (IOError, KeyError):
-            exit("File '%s' could not be opened for reading." % config_file)
+            exit(
+                "File '%s' could not be opened for reading." % config_file_path
+            )
+        except ValueError as e:
+            exit("File '%s' is not formatted correctly... %s" %
+                    (config_file_path, str(e))
+            )
 
     # If the user used ~ in the galah_home path in the config, expand it.
     config["galah_home"] = os.path.expanduser(config["galah_home"])
