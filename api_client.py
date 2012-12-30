@@ -1,6 +1,11 @@
 #!/usr/bin/env python
 
 import requests
+import json
+
+# Will be a dictionary filled with information on all of the API commands
+# supported by the server.
+api_info = None
 
 # We'll need to store any cookies the server gives us (mainly the auth cookie)
 # and requests' sessions give us a nice way to do that.
@@ -21,6 +26,31 @@ class PermissionError(Exception):
     def __str__(self):
         return self.what
 
+def resolve_arguments(expected_args, *args, **kwargs):
+    arglist = list(args)
+
+    result = {}
+    for i in expected_args:
+        current_arg_name = i["name"]
+
+        if current_arg_name in kwargs:
+            result[current_arg_name] = kwargs.pop(current_arg_name)
+        else:
+            # Silently ignore missing arguments.
+            if arglist:
+                result[current_arg_name] = arglist.pop(0)
+
+    if kwargs:
+        raise TypeError("Unknown keyword argument %s." % kwargs.popitem()[0])
+
+    if arglist:
+        raise TypeError(
+            "Too many arguments passed in. Expected %d." % len(expected_args)
+        )
+
+
+    return result
+
 def to_json(obj):
     """
     Serializes an object into a JSON representation. The returned string will be
@@ -39,14 +69,47 @@ def form_call(api_name, *args, **kwargs):
     
     """
     
-    if not kwargs:
-        return (api_name, ) + args
+    # We need to figure out if any of the arguments should be treated as file
+    # paths. If api_info is None, we're probably quering for the API info from
+    # the server.
+    if api_info is not None:
+        # Grab the stored information on the API call.
+        api_call_info = next(i for i in api_info if i["name"] == api_name)
+
+        # Grab the list of arguments
+        arguments = api_call_info["args"]
+
+        # Map the keyword and positional arguments that the user gave us to the
+        # arguments presented in arguments.
+        arguments_mapping = resolve_arguments(arguments, *args, **kwargs)
+
+        # Go through each argument we got from the user and determine precisely
+        # which ones should be treated as file paths.
+        for k, v in arguments_mapping.items():
+            # Grab the dict with the argument information for the current
+            # argument.
+            current_argument_info = next(i for i in arguments if i["name"] == k)
+
+            if current_argument_info.get("takes_file", False):
+                try:
+                    arguments_mapping[k] = open(v, "rb")
+                except IOError as e:
+                    exit(str(e))
+
+        # arguments_mapping is basically already what we want, we just need to
+        # add the name of the API call.
+        arguments_mapping.update({"api_name": api_name})
+
+        return arguments_mapping
     else:
-        # kwargs is basically already what we want, we just need to add the
-        # positional arguments and name of the API call.
-        kwargs.update({"api_name": api_name, "args": args})
-        
-        return kwargs
+        if not kwargs:
+            return (api_name, ) + args
+        else:
+            # kwargs is basically already what we want, we just need to add the
+            # positional arguments and name of the API call.
+            kwargs.update({"api_name": api_name, "args": args})
+            
+            return kwargs
 
 def save_cookiejar(jar, user):
     """
@@ -185,14 +248,32 @@ def _call(interactive, api_name, *args, **kwargs):
     
     """
     
+    # Take the arguments the user gave us and transform them into something we
+    # can send to the server.
+    data = form_call(api_name, *args, **kwargs)
+
+    # Extract any files
+    file_args = {}
+    if type(data) is dict:
+        for i in (k for k, v in data.items() if isinstance(v, file)):
+            file_args[str(i)] = data.pop(i)
+
     # May throw a requests.ConnectionError here if galah.api is unavailable.
-    request = session.post(
-        config["galah_host"] + "/api/call",
-        data = to_json(form_call(api_name, *args, **kwargs)),
-        headers = {"Content-Type": "application/json"},
-        verify = config["verify_certificate"]
-    )
-    
+    if not file_args:
+        request = session.post(
+            config["galah_host"] + "/api/call",
+            data = to_json(data),
+            headers = {"Content-Type": "application/json"},
+            verify = config["verify_certificate"]
+        )
+    else:
+        request = session.post(
+            config["galah_host"] + "/api/call",
+            data = {"request": to_json(data)},
+            files = file_args,
+            verify = config["verify_certificate"]
+        )
+
     # Will throw a requests.URLError or requests.HTTPError here if either
     # occurred.
     request.raise_for_status()
@@ -343,18 +424,6 @@ def exec_to_shell():
     script_location, script_name = os.path.split(__file__)
     script_location = os.path.abspath(script_location)
 
-    import json
-
-    # Retrieve all of the available commands from the server
-    try:
-        api_info = json.loads(call_backend("get_api_info"))
-    except requests.exceptions.ConnectionError as e:
-        print >> sys.stderr, "Could not connect with the given url '%s':" \
-                % config["galah_host"]
-        print >> sys.stderr, "\t" + str(e)
-
-        exit(1)
-
     commands = [i["name"] for i in api_info]
 
     import tempfile
@@ -430,6 +499,36 @@ def main():
 
     # If the user used ~ in the galah_home path in the config, expand it.
     config["galah_home"] = os.path.expanduser(config["galah_home"])
+
+    api_info_file_path = config["galah_home"] + "/tmp/api_info.json"
+
+    global api_info
+    api_info = None
+    try:
+        api_info = json.load(open(api_info_file_path))
+    except IOError:
+        pass
+    except ValueError:
+        print >> sys.stderr, (
+            "Could not decode valid JSON object from file at %s. Please remove "
+            "that file and try again." % api_info_file_path
+        )
+
+        exit(1)
+
+    # If we weren't able to load up a cached copy of the api_info. Request it
+    # from the server.
+    if api_info is None:
+        try:
+            api_info = json.loads(call_backend("get_api_info"))
+        except requests.exceptions.ConnectionError as e:
+            print >> sys.stderr, "Could not connect with the given url '%s':" \
+                    % config["galah_host"]
+            print >> sys.stderr, "\t" + str(e)
+
+            exit(1)
+
+        json.dump(api_info, open(api_info_file_path, "w"))
 
     if options.shell:
         exec_to_shell()
