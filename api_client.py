@@ -406,6 +406,7 @@ def main():
 
         exit(0)
 
+    config_file_path = None
     if options.config:
         config_file_path = options.config
     else:
