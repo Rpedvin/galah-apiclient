@@ -406,6 +406,7 @@ def main():
 
         exit(0)
 
+    config_file_path = None
     if options.config:
         config_file_path = options.config
     else:
@@ -414,6 +415,7 @@ def main():
 
             if os.path.isfile(resolved_path):
                 config_file_path = resolved_path
+                break
 
     if config_file_path:
         try:
