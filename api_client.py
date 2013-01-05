@@ -414,6 +414,7 @@ def main():
 
             if os.path.isfile(resolved_path):
                 config_file_path = resolved_path
+                break
 
     if config_file_path:
         try:
