@@ -2,6 +2,7 @@
 
 import requests
 import json
+import os
 
 # Will be a dictionary filled with information on all of the API commands
 # supported by the server.
@@ -111,6 +112,12 @@ def form_call(api_name, *args, **kwargs):
             
             return kwargs
 
+# Places to look for the cookie jar at
+cookie_jar_locations = [
+    os.path.join(config["galah_home"], "tmp", "cookiejar"),
+    os.path.join("/tmp", "cookiejar")
+]
+
 def save_cookiejar(jar, user):
     """
     Save the cookies in the current session to the galah temp directory.
@@ -119,10 +126,16 @@ def save_cookiejar(jar, user):
 
     import pickle
 
-    jar_path = os.path.join(config["galah_home"], "tmp", "cookiejar")
+    for i in cookie_jar_locations:
+        try:
+            with open(i, "w") as f:
+                pickle.dump((session.cookies, user), f)
+        except IOError:
+            continue
 
-    with open(jar_path, "w") as f:
-        pickle.dump((session.cookies, user), f)
+        break
+    else:
+        print >> sys.stderr, "Could not save cookie jar!"
 
 def load_cookiejar():
     """
@@ -132,13 +145,12 @@ def load_cookiejar():
 
     import pickle
 
-    jar_path = os.path.join(config["galah_home"], "tmp", "cookiejar")
-
-    try:
-        with open(jar_path, "r") as f:
-            return pickle.load(f)
-    except IOError:
-        pass
+    for i in cookie_jar_locations:
+        try:
+            with open(i, "r") as f:
+                return pickle.load(f)
+        except IOError:
+            continue
 
     return (session.cookies, None)
 
@@ -452,7 +464,6 @@ def exec_to_shell():
 
     os.execlp("bash", "bash", "--rcfile", rcfile_path)
 
-import os
 def main():
     # Parse any and all command line arguments
     options, args = parse_arguments()
@@ -475,6 +486,7 @@ def main():
 
         exit(0)
 
+    config_file_path = None
     if options.config:
         config_file_path = options.config
     else:
@@ -483,6 +495,7 @@ def main():
 
             if os.path.isfile(resolved_path):
                 config_file_path = resolved_path
+                break
 
     if config_file_path:
         try:
