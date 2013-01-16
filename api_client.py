@@ -26,27 +26,27 @@ def to_json(obj):
     """
     Serializes an object into a JSON representation. The returned string will be
     compressed appropriately for network transfer.
-    
+
     """
 
     import json
-    
+
     return json.dumps(obj, separators = (",", ":"))
 
 def form_call(api_name, *args, **kwargs):
     """
     Creates a tuple or dict (depending on the existence of keyword arguments)
     that can be serialized to JSON and sent to galah.api.
-    
+
     """
-    
+
     if not kwargs:
         return (api_name, ) + args
     else:
         # kwargs is basically already what we want, we just need to add the
         # positional arguments and name of the API call.
         kwargs.update({"api_name": api_name, "args": args})
-        
+
         return kwargs
 
 # Places to look for the cookie jar at
@@ -101,13 +101,13 @@ def login(email, password):
         config["galah_host"] + "/api/login",
         data = {"email": email, "password": password}
     )
-    
+
     request.raise_for_status()
-    
+
     # Check if we successfully logged in.
     if request.headers["X-CallSuccess"] != "True":
         raise RuntimeError(request.text)
-    
+
     # Nothing bad happened, go ahead and return what the server sent back
     return request.text
 
@@ -174,7 +174,7 @@ def oauth2login(user):
     )
 
     request.raise_for_status()
-    
+
     # Check if we successfully logged in.
     if request.headers["X-CallSuccess"] != "True":
         raise RuntimeError(request.text)
@@ -194,9 +194,9 @@ def _call(interactive, api_name, *args, **kwargs):
     itself, and will prompt the user if the server wants to push any downloads
     down, None is returned. Otherwise, pushes will be ignored and the text sent
     from the server will be returned, nothing will be printed to the console.
-    
+
     """
-    
+
     # May throw a requests.ConnectionError here if galah.api is unavailable.
     request = session.post(
         config["galah_host"] + "/api/call",
@@ -204,11 +204,11 @@ def _call(interactive, api_name, *args, **kwargs):
         headers = {"Content-Type": "application/json"},
         verify = config["verify_certificate"]
     )
-    
+
     # Will throw a requests.URLError or requests.HTTPError here if either
     # occurred.
     request.raise_for_status()
-    
+
     # Currently only textual data is ever returned but other types of data may
     # be returned in the future. If this warning goes off that means that this
     # script needs to be updated to a new version.
@@ -219,7 +219,7 @@ def _call(interactive, api_name, *args, **kwargs):
             "Expecting text/plain content, got %s. You may need to update this "
             "program." % request.headers["Content-Type"].split(";")[0]
         )
-    
+
     # Check if the server encountered an error processing the request.
     # Unfortunately the status code can't be set to 500 on the server side
     # because of some issues with Flask, so we have this custom header.
@@ -324,6 +324,10 @@ def parse_arguments(args = sys.argv[1:]):
             help = "If sepcified, all the locations this script would check "
                    "for the config file at will be displayed, then the script "
                    "will exit."
+        ),
+        make_option(
+            "--debug", "-d", action = "store_true",
+            help = "If specified, full error message will be printed out."
         )
     ]
 
@@ -395,10 +399,7 @@ def exec_to_shell():
 
     os.execlp("bash", "bash", "--rcfile", rcfile_path)
 
-def main():
-    # Parse any and all command line arguments
-    options, args = parse_arguments()
-
+def main(options, args):
     # Construct the ordered list of places to look for the galah config file.
     possible_config_paths = [
         "~/.galah/config/api_client.config",
@@ -430,7 +431,7 @@ def main():
 
     if config_file_path:
         try:
-            with open(config_file_path) as config_file: 
+            with open(config_file_path) as config_file:
                 config.update(parse_configuration(config_file))
         except (IOError, KeyError):
             exit(
@@ -534,7 +535,7 @@ def main():
         # them for one.
         if not password:
             import getpass
-            password = getpass.getpass("Please enter password for user %s: " 
+            password = getpass.getpass("Please enter password for user %s: "
                                        % user)
 
         if not password:
@@ -567,4 +568,13 @@ def main():
         print >> sys.stderr, str(e)
 
 if __name__ == "__main__":
-    main()
+    # Parse any and all command line arguments
+    options, args = parse_arguments()
+
+    try:
+        main(options, args)
+    except Exception as e:
+        if options.debug:
+            raise
+        else:
+            print >> sys.stderr, str(e)
