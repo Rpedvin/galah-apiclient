@@ -383,7 +383,9 @@ def exec_to_shell():
     print >> rcfile, 'PATH="%s:$PATH"' % script_location
 
     # Add the location of the man files to the MANPATH
-    print >> rcfile, "export MANPATH=./man/:`manpath`"
+    if os.path.isdir("./man"):
+        print >> rcfile, "unset MANPATH"
+        print >> rcfile, "export MANPATH=./man/:`manpath`"
 
     # Add aliases for each command that just wrap the api client
     for i in commands:
