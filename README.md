@@ -6,7 +6,7 @@ the official API client maintained alongside Galah.
 
 ## How to Install
 
-Go to this [webpage](http://brownhead.github.com/galah-apiclient/) to find
+Go to this [webpage](http://galah-group.github.com/galah-apiclient/) to find
 links to downloads and documentation.
 
 ## License
