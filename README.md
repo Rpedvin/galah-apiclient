@@ -6,29 +6,8 @@ the official API client maintained alongside Galah.
 
 ## How to Install
 
-Go to the [Downloads](/brownhead/galah/downloads) section and download the most
-recent release tarbell. Unpack the archive wherever you'd like and execute the
-file `api_client.py` normally. You do not need any elevated permissions to do
-this.
-
-If you'd like, you can add a symlink in one of the directories in your path
-(such as `/usr/local/bin`) so you can execute the API client from any working
-directory.
-
-```shell
-$ ln -s /usr/local/bin/api_client.py GALAH/API/ROOT/api_client.py
-```
-
-You'll want to configure the API Client as well so that it knows where the
-Galah server is and your login information. Check out the 
-[documentation](https://galah-api.readthedocs.org/en/latest/) for information
-on how to do this.
-
-## Documentation
-
-Check out the
-[documentation online](https://galah-api.readthedocs.org/en/latest/) for
-information on configuring the API Client and using the various commands.
+Go to this [webpage](http://galah-group.github.com/galah-apiclient/) to find
+links to downloads and documentation.
 
 ## License
 
