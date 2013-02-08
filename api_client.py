@@ -527,8 +527,14 @@ def main():
             print >> sys.stderr, "\t" + str(e)
 
             exit(1)
+            
+        try:
+            api_info_file = open(api_info_file_path, "w")
+        except IOError:
+            os.makedirs(config["galah_home"] + "/tmp/")
+            api_info_file = open(api_info_file_path, "w")
 
-        json.dump(api_info, open(api_info_file_path, "w"))
+        json.dump(api_info, api_info_file)
 
     if options.shell:
         exec_to_shell()
