@@ -264,6 +264,8 @@ Below are links to reference material for every API command Galah supports.
     commands/find_user
 
     commands/get_archive
+
+    commands/get_csv
     
     commands/modify_assignment
 
