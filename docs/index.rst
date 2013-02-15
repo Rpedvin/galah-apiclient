@@ -140,7 +140,8 @@ Success! The following changes were applied to Assignment [id = 50907db055c4481a
 Referencing Objects
 ^^^^^^^^^^^^^^^^^^^
 
-A number of the API commands will ask for an assignment, a class or a user (for example, :doc:`commands/class_info` wants a class as the first argument).
+A number of the API commands will ask for an assignment, a class or a user (for
+example, :doc:`commands/class_info` wants a class as the first argument).
 
 You may always reference an object by its unique ID, however, these can be long
 and annoying to even copy and paste around, so there are a number off different
