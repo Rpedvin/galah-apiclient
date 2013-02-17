@@ -1,6 +1,6 @@
 # Galah API Client
 
-[Galah](/brownhead/galah) exposes an interface that a client application can
+[Galah](/galah-group/galah) exposes an interface that a client application can
 access. While anyone could make a compliant API client, this repo will contain
 the official API client maintained alongside Galah.
 
