@@ -12,7 +12,7 @@ Reference
 
     :param due: The due date of the assignmet, ex: "10/20/2012 10:09:00".
 
-    :param for_class: The class the assignment is fors.
+    :param for_class: The class the assignment is for.
 
     :param due_cutoff: The cutoff date of the assignment (same format as due).
                        After the cutoff date, students won't even be able to
