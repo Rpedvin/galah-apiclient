@@ -13,7 +13,7 @@ Reference
 
 .. function:: delete_assignment(id):
     
-    :param id: The exact id of the user to delete.
+    :param id: The exact id of the assignment to delete.
 
 Example Usage
 -------------
