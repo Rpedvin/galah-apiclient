@@ -114,8 +114,7 @@ def form_call(api_name, *args, **kwargs):
 
 # Places to look for the cookie jar at
 cookie_jar_locations = [
-    os.path.join(config["galah_home"], "tmp", "cookiejar"),
-    os.path.join("/tmp", "cookiejar")
+    os.path.join(config["galah_home"], "tmp", "cookiejar")
 ]
 
 def save_cookiejar(jar, user):
@@ -128,9 +127,11 @@ def save_cookiejar(jar, user):
 
     for i in cookie_jar_locations:
         try:
-            with open(i, "w") as f:
+            # Get the absolute file path in case it includes things like '~'.
+            abspath = os.path.expanduser(i)
+            with open(abspath, "w") as f:
                 # Ensure cookie jar is created with 0600 permissions.
-                os.chmod(i, 0o600)
+                os.chmod(abspath, 0o600)
                 pickle.dump((session.cookies, user), f)
         except IOError:
             continue
