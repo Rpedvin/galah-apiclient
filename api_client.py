@@ -129,6 +129,8 @@ def save_cookiejar(jar, user):
     for i in cookie_jar_locations:
         try:
             with open(i, "w") as f:
+                # Ensure cookie jar is created with 0600 permissions.
+                os.chmod(i, 0o600)
                 pickle.dump((session.cookies, user), f)
         except IOError:
             continue
