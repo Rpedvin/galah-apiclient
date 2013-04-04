@@ -495,6 +495,9 @@ def main(options, args):
     config_file_path = None
     if options.config:
         config_file_path = options.config
+        # Overwrite environment's config path to make the specified path
+        # persistent in shell mode.
+        os.environ["GALAH_CONFIG_PATH"] = options.config
     else:
         for i in possible_config_paths:
             resolved_path = os.path.abspath(os.path.expanduser(i))
