@@ -20,6 +20,7 @@
 import requests
 import json
 import os
+import logging
 
 # Will be a dictionary filled with information on all of the API commands
 # supported by the server.
@@ -28,57 +29,6 @@ api_info = None
 # We'll need to store any cookies the server gives us (mainly the auth cookie)
 # and requests' sessions give us a nice way to do that.
 session = requests.session()
-
-# The default configuration settings
-config = {
-    "galah_host": "http://localhost:5000",
-    "galah_home": "~/.galah",
-    "use_oauth": False,
-    "verify_certificate": True
-}
-
-class PermissionError(Exception):
-    def __init__(self, what):
-        self.what = str(what)
-
-    def __str__(self):
-        return self.what
-
-def resolve_arguments(expected_args, *args, **kwargs):
-    arglist = list(args)
-
-    result = {}
-    for i in expected_args:
-        current_arg_name = i["name"]
-
-        if current_arg_name in kwargs:
-            result[current_arg_name] = kwargs.pop(current_arg_name)
-        else:
-            # Silently ignore missing arguments.
-            if arglist:
-                result[current_arg_name] = arglist.pop(0)
-
-    if kwargs:
-        raise TypeError("Unknown keyword argument %s." % kwargs.popitem()[0])
-
-    if arglist:
-        raise TypeError(
-            "Too many arguments passed in. Expected %d." % len(expected_args)
-        )
-
-
-    return result
-
-def to_json(obj):
-    """
-    Serializes an object into a JSON representation. The returned string will be
-    compressed appropriately for network transfer.
-
-    """
-
-    import json
-
-    return json.dumps(obj, separators = (",", ":"))
 
 def form_call(api_name, *args, **kwargs):
     """
@@ -128,51 +78,6 @@ def form_call(api_name, *args, **kwargs):
             kwargs.update({"api_name": api_name, "args": args})
 
             return kwargs
-
-# Places to look for the cookie jar at
-cookie_jar_locations = [
-    os.path.join(config["galah_home"], "tmp", "cookiejar")
-]
-
-def save_cookiejar(jar, user):
-    """
-    Save the cookies in the current session to the galah temp directory.
-
-    """
-
-    import pickle
-
-    for i in cookie_jar_locations:
-        try:
-            # Get the absolute file path in case it includes things like '~'.
-            abspath = os.path.expanduser(i)
-            with open(abspath, "w") as f:
-                # Ensure cookie jar is created with 0600 permissions.
-                os.chmod(abspath, 0o600)
-                pickle.dump((session.cookies, user), f)
-        except IOError:
-            continue
-
-        break
-    else:
-        print >> sys.stderr, "Could not save cookie jar!"
-
-def load_cookiejar():
-    """
-    Load the cookies from an old session from the galah temp directory.
-
-    """
-
-    import pickle
-
-    for i in cookie_jar_locations:
-        try:
-            with open(i, "r") as f:
-                return pickle.load(f)
-        except IOError:
-            continue
-
-    return (session.cookies, None)
 
 def login(email, password):
     """
@@ -508,36 +413,6 @@ def main(options, args):
             print "\t%s" % i
 
         exit(0)
-
-    config_file_path = None
-    if options.config:
-        config_file_path = options.config
-        # Overwrite environment's config path to make the specified path
-        # persistent in shell mode.
-        os.environ["GALAH_CONFIG_PATH"] = options.config
-    else:
-        for i in possible_config_paths:
-            resolved_path = os.path.abspath(os.path.expanduser(i))
-
-            if os.path.isfile(resolved_path):
-                config_file_path = resolved_path
-                break
-
-    if config_file_path:
-        try:
-            with open(config_file_path) as config_file:
-                config.update(parse_configuration(config_file))
-        except (IOError, KeyError):
-            exit(
-                "File '%s' could not be opened for reading." % config_file_path
-            )
-        except ValueError as e:
-            exit("File '%s' is not formatted correctly... %s" %
-                    (config_file_path, str(e))
-            )
-
-    # If the user used ~ in the galah_home path in the config, expand it.
-    config["galah_home"] = os.path.expanduser(config["galah_home"])
 
     api_info_file_path = config["galah_home"] + "/tmp/api_info.json"
 
