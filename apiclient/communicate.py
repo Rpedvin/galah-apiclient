@@ -1,6 +1,5 @@
 import pickle
 import os
-import getpass
 import sys
 
 import config
@@ -68,32 +67,8 @@ class APIClientSession:
 
         # Check if we successfully logged in.
         if request.headers["X-CallSuccess"] != "True":
-            raise BadLogin(request.text)
+            logger.critical("Could not log in with given credientials.")
+            sys.exit(1)
 
         self.user = email
         self.requests_session = session
-
-def determine_credentials():
-    """
-    Determines the username and password the user wants to log in with.
-
-    """
-
-    if "user" in config.CONFIG:
-        user = config.CONFIG["user"]
-    else:
-        user = raw_input("What user would you like to log in as?: ")
-        if not user:
-            logger.critical("No user name was specified.")
-            sys.exit(1)
-
-    if "GALAH_PASSWORD" in os.environ:
-        logger.info(
-            "Using password from GALAH_PASSWORD environmental variable."
-        )
-        password = os.environ["GALAH_PASSWORD"]
-    else:
-        password = \
-            getpass.getpass("Please enter password for user %s: " % (user, ))
-
-    return (user, password)
