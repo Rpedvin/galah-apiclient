@@ -32,8 +32,10 @@ logger = logging.getLogger("apiclient")
 # Load up the configuration
 import apiclient.config as config
 config.CONFIG = config.load_config()
+if "verbosity" in config.CONFIG:
+    apiclient.logcontrol.set_level(config.CONFIG["verbosity"])
 logger.debug(
-    "Final configuration dictionary:\n%s",
+    "Final configuration dictionary...\n%s",
     pprint.pformat(config.CONFIG, width = 72)
 )
 

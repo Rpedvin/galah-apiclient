@@ -42,7 +42,7 @@ __option_list = [
             "authority."
     ),
     ConfigOption(
-        "user", required = True,
+        "user",
         description = "The user we will try to authenticate as."
     ),
     ConfigOption(
@@ -71,8 +71,8 @@ KNOWN_OPTIONS = dict((i.name, i) for i in __option_list)
 #: The places the API client will look for a configuration file, in order of
 #: priority (the first configuration file found is used).
 DEFAULT_CONFIG_PATHS = [
-    "~/.config/galah/api_config.yml",
-    "/etc/galah/api_config.yml"
+    "~/.config/galah/api.yml",
+    "/etc/galah/api.yml"
 ]
 
 def generate_search_path(user_supplied):
@@ -209,7 +209,7 @@ def load_config(user_supplied = None):
 
     configuration = {}
     if config_file_path is not None:
-        logger.debug("Loading configuration file at %s.", config_file_path)
+        logger.info("Loading configuration file at %s.", config_file_path)
 
         try:
             f = open(config_file_path)
