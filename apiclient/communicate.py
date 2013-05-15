@@ -11,10 +11,6 @@ logger = logging.getLogger("apiclient.communicate")
 
 requests = utils.requests_module()
 
-class BadLogin(RuntimeError):
-    def __init__(self, *args, **kwargs):
-        RuntimeError.__init__(self, *args, **kwargs)
-
 class APIClientSession:
     """
     Represents an authenticated API client session.
@@ -37,8 +33,8 @@ class APIClientSession:
                 os.chmod(file_path, 0o600)
                 pickle.dump(self, f)
         except IOError:
-            logger.warn("Could not save session to %s." % (file_path, ))
-            raise
+            logger.critical("Could not save session to %s." % (file_path, ))
+            sys.exit(1)
 
     def load(self):
         file_path = config.CONFIG["session-path"]
@@ -51,8 +47,8 @@ class APIClientSession:
             with open(file_path, "r") as f:
                 return pickle.load(f)
         except IOError:
-            logger.warn("Could not load session from %s." % (file_path, ))
-            raise
+            logger.critical("Could not load session from %s." % (file_path, ))
+            sys.exit(1)
 
     def login(self, email, password):
         """

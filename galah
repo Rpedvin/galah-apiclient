@@ -43,9 +43,8 @@ logger.debug(
 import apiclient.communicate
 session = apiclient.communicate.APIClientSession()
 session.load()
+
+# Login if necessary
 if session.user is None:
-    try:
-        session.login(*apiclient.communicate.determine_credentials())
-    except apiclient.communicate.BadLogin:
-        logger.critical("Could not log in with the given credentials.")
-        sys.exit(1)
+    session.login(*apiclient.communicate.determine_credentials())
+
