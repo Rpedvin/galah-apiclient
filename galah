@@ -39,10 +39,9 @@ logger.debug(
     pprint.pformat(config.CONFIG, width = 72)
 )
 
-try:
-    import requests
-except ImportError:
-    logger.critical(
-        "Could not load the requests library.",
-        exc_info = sys.exc_info()
-    )
+# Grab the user's old session information.
+import apiclient.communicate
+session = apiclient.communicate.APIClientSession()
+session.load()
+if session.user is None:
+    session.login(*apiclient.communicate.determine_credentials())

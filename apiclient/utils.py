@@ -42,6 +42,16 @@ def yaml_module():
 
     return yaml
 
+def requests_module():
+    try:
+        import requests
+    except ImportError:
+        logger.critical(
+            "Could not load the requests library.",
+            exc_info = sys.exc_info()
+        )
+    return requests
+
 import os.path
 def resolve_path(path):
     return os.path.abspath(os.path.expanduser(path))
