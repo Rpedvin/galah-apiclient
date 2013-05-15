@@ -1,30 +1,75 @@
 import utils
 import sys
-
-CONFIG = None
-
-# The default configuration settings
-DEFAULT_CONFIG = {
-    "galah_host": "http://localhost:5000",
-    "use_oauth": False,
-    "verify_certificate": True
-}
-
-#: The places the API client will always look for a configuration file, in order
-#: of priority (the first configuration file found is used).
-DEFAULT_CONFIG_PATHS = [
-    "~/.config/galah/api_config.json",
-    "/etc/galah/api_config.json",
-    "./api_config.json",
-
-    # Deprecated configuration file locations below
-    "~/.galah/config/api_client.config",
-    "/etc/galah/api_client.config",
-    "./api_client.config"
-]
+import os
+import pprint
 
 import logging
 logger = logging.getLogger("apiclient.config")
+
+CONFIG = None
+ARGS = None
+
+class ConfigOption:
+    def __init__(self, name, default_value = None, required = False,
+            description = None, data_type = None):
+        self.name = name
+        self.default_value = default_value
+        self.required = required
+        self.description = description
+
+        if data_type is None and self.default_value is not None:
+            self.data_type = type(self.default_value)
+        else:
+            self.data_type = str
+
+# The configuration options that are known
+__option_list = [
+    ConfigOption(
+        "use-oauth", default_value = False,
+        description =
+            "If set, authentication will be done via OAuth rather than "
+            "internal auth over HTTP(S)."
+    ),
+    ConfigOption(
+        "no-verify-certificate", default_value = False,
+        description =
+            "If set, when connecting over HTTPS, the certificate presented by "
+            "the server will not be authenticated with a known certificate "
+            "authority."
+    ),
+    ConfigOption(
+        "user", required = True,
+        description = "The user we will try to authenticate as."
+    ),
+    ConfigOption(
+        "host", required = True,
+        description =
+            "The URL where a running Galah instance is available. For example: "
+            "'https://www.mygalahinstance.edu'."
+    ),
+    ConfigOption(
+        "session-path", default_value = "~/.cache/galah/session",
+        description =
+            "The location of the session file. This stores any cookies Galah "
+            "has given you. Anyone who gains access to your session file can "
+            "impersonate you, so be careful. If any directories are missing "
+            "from the path they will be created."
+    ),
+    ConfigOption(
+        "verbosity", default_value = "INFO",
+        description =
+            "The desired logging level. Choices are %s." %
+                (", ".join(utils.LOG_LEVELS), )
+    )
+]
+KNOWN_OPTIONS = dict((i.name, i) for i in __option_list)
+
+#: The places the API client will look for a configuration file, in order of
+#: priority (the first configuration file found is used).
+DEFAULT_CONFIG_PATHS = [
+    "~/.config/galah/api_config.yml",
+    "/etc/galah/api_config.yml"
+]
 
 def generate_search_path(user_supplied):
     """
@@ -55,6 +100,57 @@ def generate_search_path(user_supplied):
 
     return DEFAULT_CONFIG_PATHS
 
+def parse_arguments(args = sys.argv[1:]):
+    from optparse import OptionParser, make_option
+
+    option_list = [
+        make_option(
+            "--config", "-c", metavar = "FILE",
+            help =
+                "The configuration file to use. An error will occur if the "
+                "file is not a valid configuration file."
+        ),
+        make_option(
+            "--shell", "-s", action = "store_true",
+            help = "If specified, you will be placed in an interactive "
+                   "bash shell that will allow you to execute api commands as "
+                   "if they were regular system commands."
+        )
+    ]
+
+    # Go through the configuration options and map them to command line options
+    for i in KNOWN_OPTIONS.values():
+        if i.data_type is bool:
+            action = "store_false" if i.default_value == True else "store_true"
+        else:
+            action = "store"
+
+        required_string = ""
+        if i.required:
+            required_string = (
+                " A value must be present for this option either as a command-"
+                "line argument or within the configuration file."
+            )
+
+        default_string = ""
+        if i.default_value is not None:
+            default_string = " [Default: %s]" % (str(i.default_value), )
+
+        option_list.append(make_option(
+            "--" + i.name, action = action,
+            help = i.description + required_string + default_string
+        ))
+
+    parser = OptionParser(
+        description = "Command line interface to Galah for use by instructors "
+                      "and administrators.",
+        option_list = option_list
+    )
+
+    options, args = parser.parse_args(args)
+
+    return (options, args)
+
 def load_config(user_supplied = None):
     """
     Searches through the proper list of paths to find the configuration file and
@@ -70,36 +166,92 @@ def load_config(user_supplied = None):
 
     """
 
-    # Figure out all of the places we should look for a configuration file.
-    possible_config_paths = _generate_search_paths(user_supplied)
-
-    # Ensure any ., .., and ~ symbols are correctly handled.
-    possible_config_paths = utils.resolve_paths(possible_config_paths)
-
+    global ARGS
+    options, ARGS = parse_arguments()
+    options = dict(i for i in options.__dict__.items() if i[1] is not None)
     logger.debug(
-        "Searching through %s for configuration file.",
-        str(possible_config_paths)
+        "Command line options passed in...\n%s",
+        pprint.pformat(options)
+    )
+    logger.debug(
+        "Command line arguments passed in...\n%s",
+        pprint.pformat(ARGS)
     )
 
-    for i in possible_config_paths:
-        if os.path.isfile(i):
-            try:
-                return dict(
-                    DEFAULT_CONFIG.items() + utils.load_json(open(i)).items()
-                )
-            except IOError:
-                logger.critical(
-                    "Could not open configuration file at %s.",
-                    i,
-                    exc_info = sys.exc_info()
-                )
-                raise
-            except ValueError:
-                logger.critical(
-                    "Could not parse configuration file at %s.",
-                    i,
-                    exc_info = sys.exc_info()
-                )
-                raise
+    # Try and find a configuration file
+    config_file_path = None
+    if options.get("config") is not None:
+        config_file_path = options["config"]
+    else:
+        # Figure out all of the places we should look for a configuration file.
+        possible_config_paths = generate_search_path(user_supplied)
 
-    return DEFAULT_CONFIG
+        # Ensure any ., .., and ~ symbols are correctly handled.
+        possible_config_paths = utils.resolve_paths(possible_config_paths)
+
+        logger.debug(
+            "Searching for configuration file in...\n%s",
+            pprint.pformat(possible_config_paths, width = 72)
+        )
+
+        for i in possible_config_paths:
+            if os.path.isfile(i):
+                config_file_path = i
+                break
+
+    configuration = {}
+    if config_file_path is not None:
+        logger.debug("Loading configuration file at %s.", config_file_path)
+
+        try:
+            f = open(config_file_path)
+        except IOError:
+            logger.critical(
+                "Could not open configuration file at %s.",
+                config_file_path,
+                exc_info = sys.exc_info()
+            )
+            raise
+
+        try:
+            configuration = utils.load_yaml(f)
+
+            if not isinstance(configuration, dict):
+                logger.critical(
+                    "Your configuration file is not properly formatted. "
+                    "The top level item must be a dictionary."
+                )
+                sys.exit(1)
+        except ValueError:
+            logger.critical(
+                "Could not parse configuration file at %s.",
+                config_file_path,
+                exc_info = sys.exc_info()
+            )
+            raise
+        finally:
+            f.close()
+
+    # Make a dictionary with the default values in it
+    default_configuration = dict(
+        (i.name, i.default_value) for i in KNOWN_OPTIONS.values()
+                if i.default_value
+    )
+
+    # Join the various dictionaries we have together. Priority is bottom-to-top.
+    final_config = dict(
+        default_configuration.items() +
+        configuration.items() +
+        options.items()
+    )
+
+    for i in (j.name for j in KNOWN_OPTIONS.values() if j.required):
+        if final_config.get(i) is None:
+            logger.critical(
+                "Required value %s is unspecified. This value needs to be "
+                "set in either the configuration file or on the command line.",
+                i
+            )
+            sys.exit(1)
+
+    return final_config
