@@ -7,7 +7,7 @@ import config
 import utils
 
 import logging
-logger = logging.getLogger("apiclient.session")
+logger = logging.getLogger("apiclient.communicate")
 
 requests = utils.requests_module()
 
