@@ -24,10 +24,10 @@ import sys
 import pprint
 
 # Initialize the logging library.
+import apiclient.logcontrol
 import logging
-logging.basicConfig(format = "%(levelname)s - %(message)s\n" + "-" * 72)
+apiclient.logcontrol.init_logging()
 logger = logging.getLogger("apiclient")
-logger.setLevel(logging.DEBUG)
 
 # Load up the configuration
 import apiclient.config as config

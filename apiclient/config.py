@@ -2,11 +2,15 @@ import utils
 import sys
 import os
 import pprint
+import logcontrol
 
 import logging
 logger = logging.getLogger("apiclient.config")
 
+#: A dictionary with the configuration values in it.
 CONFIG = None
+
+#: The arguments the user passed in on the command line.
 ARGS = None
 
 class ConfigOption:
@@ -59,7 +63,7 @@ __option_list = [
         "verbosity", default_value = "INFO",
         description =
             "The desired logging level. Choices are %s." %
-                (", ".join(utils.LOG_LEVELS), )
+                (", ".join(logcontrol.LOG_LEVELS), )
     )
 ]
 KNOWN_OPTIONS = dict((i.name, i) for i in __option_list)
@@ -169,6 +173,10 @@ def load_config(user_supplied = None):
     global ARGS
     options, ARGS = parse_arguments()
     options = dict(i for i in options.__dict__.items() if i[1] is not None)
+
+    if "verbosity" in options:
+        logcontrol.set_level(logcontrol.LOG_LEVELS[options["verbosity"]])
+
     logger.debug(
         "Command line options passed in...\n%s",
         pprint.pformat(options)

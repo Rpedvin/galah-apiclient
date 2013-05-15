@@ -1,15 +1,3 @@
-# This is defined here to avoid circular dependencies as this dictionary is
-# useful to multiple modules.
-import logging
-LOG_LEVELS = {
-    "NOLOGGING": 100,
-    "CRITICAL": logging.CRITICAL,
-    "ERROR": logging.ERROR,
-    "WARNING": logging.WARNING,
-    "INFO": logging.INFO,
-    "DEBUG": logging.DEBUG
-}
-
 def json_module():
     """
     A handy function that will try to find a suitable JSON module to import and
