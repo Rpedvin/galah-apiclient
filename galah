@@ -45,6 +45,9 @@ session = apiclient.communicate.APIClientSession()
 session.load()
 
 # Login if necessary
+import apiclient.ui
 if session.user is None:
-    session.login(*apiclient.communicate.determine_credentials())
+    session.login(*apiclient.ui.determine_credentials())
 
+# Perform the command the user wants to execute
+command_args, command_kwargs = apiclient.ui.parse_raw_args(config.ARGS)
