@@ -22,6 +22,7 @@ if __name__ != "__main__":
 
 import sys
 import pprint
+import os
 
 # Initialize the logging library.
 import apiclient.logcontrol
@@ -39,21 +40,62 @@ logger.debug(
     pprint.pformat(config.CONFIG, width = 72)
 )
 
+# Set to True by any of the "do something and exit" options.
+exit_now = False
+
+if config.CONFIG.get("logout"):
+	session_path = config.CONFIG["session-path"]
+	if os.path.isfile(session_path):
+		logger.info("Deleting session file at %s.", session_path)
+		os.remove(session_path)
+	else:
+		logger.info(
+			"No session file exists at %s. Doing nothing.",
+			session_path
+		)
+
+	exit_now = True
+
+if config.CONFIG.get("clear-api-info"):
+	api_info_path = config.CONFIG["api-info-path"]
+	if os.path.isfile(api_info_path):
+		logger.info("Deleting session file at %s.", api_info_path)
+		os.remove(api_info_path)
+	else:
+		logger.info(
+			"No session file exists at %s. Doing nothing.",
+			api_info_path
+		)
+
+	exit_now = True
+
+if exit_now:
+	sys.exit(0)
+
 # Grab the user's old session information.
 import apiclient.communicate
 session = apiclient.communicate.APIClientSession()
 session.load()
 
+save_session = False
+
 # Login if necessary
 import apiclient.ui
 if session.user is None:
     session.login(*apiclient.ui.determine_credentials())
+    save_session = True
 
 # Request the API info from the server if
 if session.api_info is None:
     session.fetch_api_info()
+    save_session = True
+
+if save_session:
+	session.save()
 
 # Perform the command the user wants to execute
 command_args, command_kwargs = apiclient.ui.parse_raw_args(config.ARGS)
 
-session.save()
+if command_args:
+	session.call(command_args[0], *command_args[1:], **command_kwargs)
+

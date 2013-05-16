@@ -129,11 +129,17 @@ def parse_arguments(args = sys.argv[1:]):
                 "file is not a valid configuration file."
         ),
         make_option(
-            "--shell", "-s", action = "store_true",
-            help = "If specified, you will be placed in an interactive "
-                   "bash shell that will allow you to execute api commands as "
-                   "if they were regular system commands."
-        )
+            "--logout", action = "store_true",
+            help =
+                "If set, the script will log you out and then exit "
+                "immediately. Logging you out means removing the session file."
+        ),
+        make_option(
+            "--clear-api-info", action = "store_true", dest="clear-api-info",
+            help =
+                "If set, the script will clear the API Info cache and then "
+                "exit immediately"
+        ),
     ]
 
     # Go through the configuration options and map them to command line options
@@ -189,7 +195,7 @@ def load_config(user_supplied = None):
     options = dict(i for i in options.__dict__.items() if i[1] is not None)
 
     if "verbosity" in options:
-        logcontrol.set_level(logcontrol.LOG_LEVELS[options["verbosity"]])
+        logcontrol.set_level(options["verbosity"])
 
     logger.debug(
         "Command line options passed in...\n%s",

@@ -4,20 +4,26 @@ logger = logging.getLogger("apiclient.session")
 class Function:
 	class Parameter:
 		def __init__(self, name, default_value = None, param_type = None):
-			self.name = name
-			self.default_value = default_value
+			self.name = str(name)
 			self.param_type = param_type
+
+			self.default_value = default_value
+			if isinstance(self.default_value, basestring):
+				self.default_value = str(self.default_value)
 
 		def __str__(self):
 			result = [self.name]
 
-			if self.param_type:
+			if self.param_type and self.param_type is not str:
 				result.append(":" + self.param_type.__name__)
 
-			if self.default_value:
-				result.append(" = " + str(self.default_value))
+			if self.default_value is not None:
+				result.append(" = " + repr(self.default_value))
 
-			return "".join(result)
+			if self.default_value is not None:
+				return "[" + "".join(result) + "]"
+			else:
+				return "".join(result)
 
 	def __init__(self, name, params):
 		self.name = name
@@ -46,6 +52,7 @@ class Function:
 
 	    params_copy = self.params[:]
 
+	    # Grab all of the positional arguments and associate them correctly.
 	    for i in args:
 	    	if not params_copy:
 	    		raise TypeError(
@@ -57,9 +64,10 @@ class Function:
 
 	    	result[current_param.name] = i
 
-	    PARAMETER_NAMES = set(i.name for i in self.params)
+	    # Grab all of the keyword arguments.
+	    parameter_names = set(i.name for i in self.params)
 	    for k, v in kwargs.items():
-	    	if k not in PARAMETER_NAMES:
+	    	if k not in parameter_names:
 	    		raise TypeError(
 	    			"%s received unknown keyword argument %s." %
 	    				(self.name, k)
@@ -77,7 +85,7 @@ class Function:
 	    	params_copy = [j for j in params_copy if j.name != k]
 
 	    for i in self.params:
-	    	if i.name not in result and i.default_value:
+	    	if i.name not in result and i.default_value is not None:
 	    		result[i.name] = i.default_value
 
 	    for i in self.params:
@@ -93,5 +101,5 @@ class Function:
 	    return result
 
 	def __str__(self):
-		return self.name + "(" + ", ".join(str(i) for i in self.params) + ")"
+		return self.name + " " + " ".join(str(i) for i in self.params)
 

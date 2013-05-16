@@ -13,14 +13,6 @@ logger = logging.getLogger("apiclient.communicate")
 
 requests = utils.requests_module()
 
-def _form_call(api_name, *args, **kwargs):
-    """
-    Transforms an API Call into a dict suitable to send to Galah.
-
-    """
-
-    return dict([("api_name", api_name), ("args", args)] + kwargs.items())
-
 def _parse_api_info(api_info):
     result = {}
     for command in api_info:
@@ -160,11 +152,98 @@ class APIClientSession:
         self.user = email
         self.requests_session = session
 
+        logger.info("Logged in as %s.", self.user)
+
     def fetch_api_info(self):
+        logger.info("Fetching API Info...")
+
+        r = self._send_request({"api_name": "get_api_info"})
+
+        if r.status_code != requests.codes.ok:
+            logger.critical("Could not get API info from Galah.")
+            sys.exit(1)
+
+        self.api_info_raw = r.text.encode("ascii")
+
         try:
-            r = requests.post(
+            self.api_info = _parse_api_info(r.json())
+        except ValueError:
+            logger.critical(
+                "Galah did not give us valid API info. It gave us...\n%s",
+                self.api_info_raw,
+                exc_info = sys.exc_info()
+            )
+            sys.exit(1)
+
+        logger.debug(
+            "Loaded API info...\n%s",
+            "\n".join(str(i) for i in self.api_info.values())
+        )
+
+    def call(self, command, *args, **kwargs):
+        if command not in self.api_info:
+            logger.critical(
+                "%s is not a known command. You can try using --clear-api-info "
+                "to reload the list of available commands.",
+                command
+            )
+            sys.exit(1)
+
+        try:
+            request = self.api_info[command].resolve_arguments(
+                *args, **kwargs
+            )
+        except TypeError as e:
+            logger.critical(
+                "Could not parse command, %s\nUsage: %s",
+                str(e),
+                str(self.api_info[command]),
+                exc_info = sys.exc_info()
+            )
+            sys.exit(1)
+
+        request["api_name"] = command
+
+        logger.debug(
+            "Prepared request for Galah...\n%s",
+            pprint.pformat(request, width = 72)
+        )
+
+        logger.info(
+            "Executing %s command on Galah as user %s.", command, self.user
+        )
+
+        r = self._send_request(request)
+
+        if r.headers["X-CallSuccess"] != "True":
+            if r.headers["X-ErrorType"] == "PermissionError":
+                logger.info("The server sent back: %s", r.text)
+
+                logger.critical(
+                    "You do not have sufficient permissions to use that "
+                    "command."
+                )
+            else:
+                logger.critical("%s", r.text)
+
+            sys.exit(1)
+        elif r.status_code != requests.codes.ok:
+            logger.critical("An unknown server error occurred.")
+            sys.exit(1)
+
+        # Print the result of the command to standard output.
+        print r.text
+
+    def _send_request(self, request):
+        try:
+            if self.requests_session:
+                requester = self.requests_session
+            else:
+                requester = requests
+
+            return requester.post(
                 config.CONFIG["host"] + "/api/call",
-                data = utils.json_module().dumps(_form_call("get_api_info")),
+                data = utils.to_json(request),
                 headers = {"Content-Type": "application/json"},
                 verify = not config.CONFIG.get("no-verify-certificate", False)
             )
@@ -175,16 +254,3 @@ class APIClientSession:
                 exc_info = sys.exc_info()
             )
             sys.exit(1)
-
-        if r is None or r.status_code != requests.codes.ok:
-            logger.critical("Could not get API info from Galah.")
-            sys.exit(1)
-
-        self.api_info_raw = r.text.encode("ascii")
-        self.api_info = _parse_api_info(r.json())
-
-        logger.debug(
-            "Loaded API info...\n%s",
-            "\n".join(str(i) for i in self.api_info.values())
-        )
-
