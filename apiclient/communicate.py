@@ -10,6 +10,14 @@ logger = logging.getLogger("apiclient.communicate")
 
 requests = utils.requests_module()
 
+def _form_call(api_name, *args, **kwargs):
+    """
+    Transforms an API Call into a dict suitable to send to Galah.
+
+    """
+
+    return dict([("api_name", api_name), ("args", args)] + kwargs.items())
+
 class APIClientSession:
     """
     Represents an authenticated API client session.
@@ -20,9 +28,12 @@ class APIClientSession:
 
     """
 
-    def __init__(self, requests_session = None, user = None):
+    def __init__(self, requests_session = None, user = None,
+            api_info_raw = None, api_info = None):
         self.user = user
         self.requests_session = requests_session
+        self.api_info_raw = api_info_raw
+        self.api_info = api_info
 
     def save(self):
         file_path = config.CONFIG["session-path"]
@@ -72,3 +83,11 @@ class APIClientSession:
 
         self.user = email
         self.requests_session = session
+
+    def get_api_info(self):
+        r = requests.post(
+            config.CONFIG["host"] + "/api/call",
+            data = _form_call("get_api_info"),
+            headers = {"Content-Type": "application/json"},
+            verify = not config.CONFIG.get("no-verify-certificate", False)
+        )
