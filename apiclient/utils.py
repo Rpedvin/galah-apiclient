@@ -72,17 +72,16 @@ def to_json(obj):
 
     return json_module().dumps(obj, separators = (",", ":"))
 
-def load_json(file):
-    """
-    Loads a JSON file.
-
-    :param file: A file-like object to read from.
-
-    :returns: A ``dict`` representing the deserialized file contents.
-
-    """
-
-    return json_module().load(file)
-
 def load_yaml(file):
     return yaml_module().safe_load(file)
+
+import os.path
+import os
+def prepare_directory(path):
+    directory = os.path.dirname(path)
+
+    if os.path.isdir(directory):
+        return False
+
+    os.makedirs(directory, 0o700)
+    return True

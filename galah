@@ -49,5 +49,11 @@ import apiclient.ui
 if session.user is None:
     session.login(*apiclient.ui.determine_credentials())
 
+# Request the API info from the server if
+if session.api_info is None:
+    session.fetch_api_info()
+
 # Perform the command the user wants to execute
 command_args, command_kwargs = apiclient.ui.parse_raw_args(config.ARGS)
+
+session.save()

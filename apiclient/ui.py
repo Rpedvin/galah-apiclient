@@ -3,6 +3,7 @@ import getpass
 import re
 import pprint
 import config
+import os
 
 import logging
 logger = logging.getLogger("apiclient.ui")

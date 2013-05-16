@@ -13,6 +13,9 @@ CONFIG = None
 #: The arguments the user passed in on the command line.
 ARGS = None
 
+class Path(str):
+    pass
+
 class ConfigOption:
     def __init__(self, name, default_value = None, required = False,
             description = None, data_type = None):
@@ -23,8 +26,10 @@ class ConfigOption:
 
         if data_type is None and self.default_value is not None:
             self.data_type = type(self.default_value)
-        else:
+        elif data_type is None:
             self.data_type = str
+        else:
+            self.data_type = data_type
 
 # The configuration options that are known
 __option_list = [
@@ -53,11 +58,20 @@ __option_list = [
     ),
     ConfigOption(
         "session-path", default_value = "~/.cache/galah/session",
+        data_type = Path,
         description =
             "The location of the session file. This stores any cookies Galah "
             "has given you. Anyone who gains access to your session file can "
             "impersonate you, so be careful. If any directories are missing "
             "from the path they will be created."
+    ),
+    ConfigOption(
+        "api-info-path", default_value = "~/.cache/galah/api-info",
+        data_type = Path,
+        description =
+            "The location of the API info cache. This contains information on "
+            "all of the commands the server supports and is automatically "
+            "updated by the API client."
     ),
     ConfigOption(
         "verbosity", default_value = "INFO",
@@ -254,12 +268,18 @@ def load_config(user_supplied = None):
     )
 
     for i in (j.name for j in KNOWN_OPTIONS.values() if j.required):
-        if final_config.get(i) is None:
+        if i not in final_config:
             logger.critical(
                 "Required value %s is unspecified. This value needs to be "
                 "set in either the configuration file or on the command line.",
                 i
             )
             sys.exit(1)
+
+    # Go through and resolve any paths
+    for i in (j.name for j in KNOWN_OPTIONS.values()
+            if j.data_type is Path):
+        if i in final_config:
+            final_config[i] = utils.resolve_path(final_config[i])
 
     return final_config
