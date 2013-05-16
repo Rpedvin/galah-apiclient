@@ -161,7 +161,7 @@ def parse_arguments(args = sys.argv[1:]):
             default_string = " [Default: %s]" % (str(i.default_value), )
 
         option_list.append(make_option(
-            "--" + i.name, action = action,
+            "--" + i.name, action = action, dest = i.name,
             help = i.description + required_string + default_string
         ))
 
