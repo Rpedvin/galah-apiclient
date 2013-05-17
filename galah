@@ -98,4 +98,6 @@ command_args, command_kwargs = apiclient.ui.parse_raw_args(config.ARGS)
 
 if command_args:
 	session.call(command_args[0], *command_args[1:], **command_kwargs)
+else:
+	logger.info("No command given. Doing nothing...")
 

@@ -78,3 +78,32 @@ def determine_credentials():
             getpass.getpass("Please enter password for user %s: " % (user, ))
 
     return (user, password)
+
+import sys
+def print_carriage(text, width = 72):
+    sys.stdout.write("\r" + str(text) + " " * (width - len(text)) + "\r")
+    sys.stdout.flush()
+
+def progress_bar_indeterminate(size = 20, ball = "#####"):
+    position = 0
+    going_right = True
+    adjusted_size = size - len(ball)
+    while True:
+        position += 1 if going_right else -1
+
+        if position == adjusted_size:
+            going_right = False
+        elif position == 0:
+            going_right = True
+
+        result = "[" + " " * (position) + ball + " " * (adjusted_size - position) + "]"
+
+        yield "".join(result)
+
+def progress_bar(progress, size = 20):
+    if progress < 0:
+        return "[" + "?" * size + "]"
+    else:
+        progress = min(progress, 1)
+        done = int(round(size * progress))
+        return "[" + "#" * done + " " * (size - done) + "]"

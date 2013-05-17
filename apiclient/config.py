@@ -74,6 +74,13 @@ __option_list = [
             "updated by the API client."
     ),
     ConfigOption(
+        "downloads-directory", default_value = "~/Downloads/",
+        data_type = Path,
+        description =
+            "The directory to place downloads from the server into. It will "
+            "not be created if it does not exist."
+    ),
+    ConfigOption(
         "verbosity", default_value = "INFO",
         description =
             "The desired logging level. Choices are %s." %

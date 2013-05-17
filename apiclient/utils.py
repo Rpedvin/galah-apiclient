@@ -85,3 +85,41 @@ def prepare_directory(path):
 
     os.makedirs(directory, 0o700)
     return True
+
+HOME_DIR = os.path.expanduser("~")
+def shorten_path(path):
+    choices = []
+
+    choices.append(path)
+
+    abs_path = os.path.normpath(resolve_path(path))
+    choices.append(os.path.join("~/", os.path.relpath(abs_path, HOME_DIR)))
+    choices.append(abs_path)
+
+    return min(choices, key = len)
+
+def postfix_file_name(file_name, suffix):
+    file_name, extension = os.path.splitext(file_name)
+
+    return str(file_name) + str(suffix) + str(extension)
+
+def find_available_file(file_path):
+    """
+    Find an available file name, adding a number if the file name is
+    taken. For example, if a file myfile.tgz exists, we will use
+    myfile (1).tgz. This is similar to how the browser chromium handles
+    downloads.
+
+    """
+
+    directory, file_name = os.path.split(file_path)
+
+    suffix = ""
+    count = 1
+    while os.path.isfile(os.path.join(directory,
+            postfix_file_name(file_name, suffix))):
+        suffix = " (%d)" % (count, )
+        count += 1
+
+    return os.path.join(directory, postfix_file_name(file_name, suffix))
+

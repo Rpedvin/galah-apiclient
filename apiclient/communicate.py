@@ -4,9 +4,12 @@ import os
 import os.path
 import sys
 import function
+import time
+import urlparse
 
 import config
 import utils
+import ui
 
 import logging
 logger = logging.getLogger("apiclient.communicate")
@@ -231,15 +234,29 @@ class APIClientSession:
             logger.critical("An unknown server error occurred.")
             sys.exit(1)
 
-        # Print the result of the command to standard output.
-        print r.text
+        # If the response is a file...
+        if "X-Download" in r.headers:
+            default_name = r.headers.get(
+                "X-Download-DefaultName", "downloaded_file"
+            )
+
+            url = urlparse.urljoin(
+                config.CONFIG["host"], r.headers["X-Download"]
+            )
+
+            self.download(url, default_name)
+        else:
+            print r.text
+
+    def _requester(self):
+        if self.requests_session:
+            return self.requests_session
+        else:
+            return requests
 
     def _send_request(self, request):
         try:
-            if self.requests_session:
-                requester = self.requests_session
-            else:
-                requester = requests
+            requester = self._requester()
 
             return requester.post(
                 config.CONFIG["host"] + "/api/call",
@@ -254,3 +271,100 @@ class APIClientSession:
                 exc_info = sys.exc_info()
             )
             sys.exit(1)
+
+    def download(self, url, file_name):
+        try:
+            return self.download_(url, file_name)
+        except KeyboardInterrupt:
+            print "\rDownload cancelled by you." + " " * 40
+            sys.exit(1)
+
+    def download_(self, url, file_name):
+        downloads_directory = config.CONFIG["downloads-directory"]
+
+        # Find an available file path
+        final_file_path = utils.find_available_file(
+            os.path.join(downloads_directory, file_name)
+        )
+        final_file_name = os.path.basename(final_file_path)
+
+        logger.debug("File will be saved to %s.", final_file_path)
+
+        # Get a generator function that makes a pretty progress bar.
+        bar = ui.progress_bar_indeterminate()
+
+        # Actually try to grab the file from the server
+        while True:
+            ui.print_carriage(
+                "%s Trying to download file... %s" %
+                    (ui.progress_bar(0.0), " " * 30)
+            )
+
+            # Ask the server for the file
+            try:
+                file_request = self.requests_session.get(
+                    url, timeout = 1, stream = True
+                )
+            except requests.exceptions.Timeout:
+                logger.info(
+                    "Request timed out. Server did not accept connection after "
+                    "1 second."
+                )
+
+            # If it's giving it to us...
+            if file_request.status_code == 200:
+                logger.debug(
+                    "Response headers...\n%s",
+                    pprint.pformat(file_request.headers, width = 72)
+                )
+
+                if "content-length" in file_request.headers:
+                    size = float(file_request.headers["content-length"])
+                else:
+                    logger.info("File is of unknown size.")
+
+                    size = 0
+                    ui.print_carriage(
+                        ui.progress_bar(-1) + " Downloading file."
+                    )
+
+                # Download the file in chunks.
+                chunk_size = 124
+                downloaded = 0
+                with open(final_file_path, "wb") as f:
+                    for chunk in file_request.iter_content(124):
+                        if size != 0:
+                            ui.print_carriage(
+                                ui.progress_bar(downloaded / size) +
+                                " Downloading file."
+                            )
+                            downloaded += chunk_size
+
+                        f.write(chunk)
+
+            # If the server got particularly angry at us...
+            if (file_request.status_code == 500 or
+                    ("X-CallSuccess" in file_request.headers and
+                    file_request.headers["X-CallSuccess"] == "False")):
+                logger.critical(
+                    "500 response. The server encountered an error."
+                )
+                sys.exit(1)
+
+            if file_request.status_code == requests.codes.ok:
+                break
+
+            # Make sure that the trying prompt appears for at least a moment or
+            # so
+            time.sleep(0.5)
+
+            period = 0.1
+            wait_for = 4
+            for i in xrange(int(wait_for / period)):
+                ui.print_carriage(
+                    next(bar) + " Download not ready yet. Waiting."
+                )
+
+                time.sleep(period)
+
+        print "File saved to %s." % utils.shorten_path(final_file_path)
