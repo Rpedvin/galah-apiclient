@@ -1,3 +1,25 @@
+# Copyright (c) 2013 Galah Group LLC
+# Copyright (c) 2013 Other contributers as noted in the CONTRIBUTERS file
+#
+# This file is part of galah-apiclient.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+#
+# You may obtain a copy of the License at
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""
+This module is responsible for all communications with the Galah server.
+
+"""
+
 import pprint
 import pickle
 import os
@@ -17,6 +39,15 @@ logger = logging.getLogger("apiclient.communicate")
 requests = utils.requests_module()
 
 def _parse_api_info(api_info):
+    """
+    Breaks up API info into a more useable form.
+
+    :param api_info: A list of dictionaries as returned by Galah.
+    :returns: A dictionary such that each value is a :class:`function.Function`
+            object, and each key is the name of the function.
+
+    """
+
     result = {}
     for command in api_info:
         result[command["name"]] = function.Function(
@@ -50,6 +81,14 @@ class APIClientSession:
         self.api_info = api_info
 
     def save(self):
+        """
+        Saves the session.
+
+        This is done by saving a "session file" containing the cookies and any
+        other credientials, as well as a cache file containing the API data.
+
+        """
+
         session_file_path = config.CONFIG["session-path"]
 
         if self.user:
@@ -94,6 +133,11 @@ class APIClientSession:
                 )
 
     def load(self):
+        """
+        Loads any data saved by a previous call to :meth:`save`.
+
+        """
+
         session_file_path = config.CONFIG["session-path"]
 
         if os.path.isfile(session_file_path):
@@ -103,8 +147,10 @@ class APIClientSession:
                 with open(session_file_path, "r") as f:
                     self.user, self.requests_session = pickle.load(f)
             except IOError:
-                logger.critical("Could not load session from %s." % (session_file_path, ))
-                sys.exit(1)
+                logger.warn(
+                    "Could not load session from %s." %
+                        (session_file_path, )
+                )
         else:
             logger.debug("No session file found at %s.", session_file_path)
 
@@ -133,8 +179,12 @@ class APIClientSession:
 
     def login(self, email, password):
         """
-        Attempts to authenticate with Galah using the credentials provided
-        through various sources.
+        Attempts to authenticate with Galah using the given email and password.
+
+        .. note::
+
+            To actually get the credentials from the user, see
+            :func:`apiclient.ui.determine_credentials`
 
         """
 
@@ -158,9 +208,19 @@ class APIClientSession:
         logger.info("Logged in as %s.", self.user)
 
     def fetch_api_info(self):
+        """
+        Queries the server for the known API commands.
+
+        ``api_info_raw`` will be set to equal the returned text as a single
+        ASCII string.
+
+        ``api_info`` will be set appropriately.
+
+        """
+
         logger.info("Fetching API Info...")
 
-        r = self._send_request({"api_name": "get_api_info"})
+        r = self._send_api_command({"api_name": "get_api_info"})
 
         if r.status_code != requests.codes.ok:
             logger.critical("Could not get API info from Galah.")
@@ -184,6 +244,17 @@ class APIClientSession:
         )
 
     def call(self, command, *args, **kwargs):
+        """
+        Performs an API command on the server.
+
+        If the server signals that it wants us to download a file, it will be
+        done automatically within this function.
+
+        If the server sent text as a response, it will be sent to standard
+        output.
+
+        """
+
         if command not in self.api_info:
             logger.critical(
                 "%s is not a known command. You can try using --clear-api-info "
@@ -216,7 +287,7 @@ class APIClientSession:
             "Executing %s command on Galah as user %s.", command, self.user
         )
 
-        r = self._send_request(request)
+        r = self._send_api_command(request)
 
         if r.headers["X-CallSuccess"] != "True":
             if r.headers["X-ErrorType"] == "PermissionError":
@@ -249,12 +320,35 @@ class APIClientSession:
             print r.text
 
     def _requester(self):
+        """
+        Determines the most appropriate object to send an HTTP request through.
+
+        :returns: Either the ``requests`` module itself, or a
+                ``requests.Session`` object.
+
+        Use this function whenever your about to send a get or post request to
+        the server.
+
+        .. code-block::
+
+            self._requester().get("https://galah.galah.com/do/things")
+
+        """
+
         if self.requests_session:
             return self.requests_session
         else:
             return requests
 
-    def _send_request(self, request):
+    def _send_api_command(self, request):
+        """
+        Send an API command to Galah.
+
+        :param request: A properly formed JSON object to send Galah.
+        :returns: A ``requests.Response`` object.
+
+        """
+
         try:
             requester = self._requester()
 
@@ -273,13 +367,26 @@ class APIClientSession:
             sys.exit(1)
 
     def download(self, url, file_name):
+        """
+        Downloads a file from Galah.
+
+        :param url: The URL of the resource.
+        :param file_name: The name of the file. Galah will supply this with a
+                custom HTTP header.
+
+        """
+
         try:
-            return self.download_(url, file_name)
+            return self._download(url, file_name)
         except KeyboardInterrupt:
             print "\rDownload cancelled by you." + " " * 40
             sys.exit(1)
 
-    def download_(self, url, file_name):
+    def _download(self, url, file_name):
+        """
+        See :meth:`download`.
+
+        """
         downloads_directory = config.CONFIG["downloads-directory"]
 
         # Find an available file path

@@ -1,3 +1,25 @@
+# Copyright (c) 2013 Galah Group LLC
+# Copyright (c) 2013 Other contributers as noted in the CONTRIBUTERS file
+#
+# This file is part of galah-apiclient.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+#
+# You may obtain a copy of the License at
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""
+Handles loading the configuration file and parsing any command line arguments.
+
+"""
+
 import utils
 import sys
 import os
@@ -96,7 +118,7 @@ DEFAULT_CONFIG_PATHS = [
     "/etc/galah/api.yml"
 ]
 
-def generate_search_path(user_supplied):
+def generate_search_path():
     """
     Generates a list of paths to search through for the configuraiton file.
 
@@ -114,10 +136,6 @@ def generate_search_path(user_supplied):
 
     """
 
-    # If the user supplied a file path, only use that path.
-    if user_supplied:
-        return [user_supplied]
-
     # If the user gave us a path list, make sure to prepend that to the default
     # paths
     if "GALAH_CONFIG_PATH" in os.environ:
@@ -126,6 +144,14 @@ def generate_search_path(user_supplied):
     return DEFAULT_CONFIG_PATHS
 
 def parse_arguments(args = sys.argv[1:]):
+    """
+    Parses any given command line arguments.
+
+    :param args: A list of arguments to parse. It should not include the "first"
+            command line argument (the name of the executable).
+
+    """
+
     from optparse import OptionParser, make_option
 
     option_list = [
@@ -182,18 +208,19 @@ def parse_arguments(args = sys.argv[1:]):
 
     return (options, args)
 
-def load_config(user_supplied = None):
+def load_config():
     """
-    Searches through the proper list of paths to find the configuration file and
-    returns a single file.
+    Loads the configuration and parses the command line arguments.
 
-    :param user_supplied: Passed directly to :func:`generate_search_path`.
+    This function is the "main" function of this module and brings together all
+    of the modules various functions.
 
-    :returns: A ``dict``.
+    After this function executes, :data:`CONFIG` will contain the final
+    configuration, and :data:`ARGS` will contain any left over command line
+    arguments that weren't parsed (which will likely be the command that the
+    user wants to execute).
 
-    .. seealso::
-        :func:`generate_search_path` is used to figure out where to look for the
-                configuration file.
+    :returns: A ``dict`` containing the final configuration.
 
     """
 
@@ -219,7 +246,7 @@ def load_config(user_supplied = None):
         config_file_path = options["config"]
     else:
         # Figure out all of the places we should look for a configuration file.
-        possible_config_paths = generate_search_path(user_supplied)
+        possible_config_paths = generate_search_path()
 
         # Ensure any ., .., and ~ symbols are correctly handled.
         possible_config_paths = utils.resolve_paths(possible_config_paths)
@@ -235,7 +262,9 @@ def load_config(user_supplied = None):
                 break
 
     configuration = {}
-    if config_file_path is not None:
+    if config_file_path is None:
+        logger.info("No configuration file found.")
+    else:
         logger.info("Loading configuration file at %s.", config_file_path)
 
         try:

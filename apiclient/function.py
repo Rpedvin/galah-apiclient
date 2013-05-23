@@ -1,7 +1,38 @@
+# Copyright (c) 2013 Galah Group LLC
+# Copyright (c) 2013 Other contributers as noted in the CONTRIBUTERS file
+#
+# This file is part of galah-apiclient.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+#
+# You may obtain a copy of the License at
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""
+This module houses the useful :class:`Function` class.
+
+"""
+
 import logging
-logger = logging.getLogger("apiclient.session")
+logger = logging.getLogger("apiclient.function")
 
 class Function:
+	"""
+	This class represents a command that can be executed on the server.
+
+	:ivar name: The name of the command.
+	:ivar params: A list of :class:`Function.Parameter` objects representing the
+			paramaters the command will accept.
+
+	"""
+
 	class Parameter:
 		def __init__(self, name, default_value = None, param_type = None):
 			self.name = str(name)
@@ -29,24 +60,16 @@ class Function:
 		self.name = name
 		self.params = params
 
-	def validate_params(self, raise_exception = True):
-		default_values = False
-		for i in self.params:
-			if i.default_value:
-				default_values = True
-			elif i.default_value != default_values:
-				if not raise_exception:
-					return False
-
-				raise ValueError(
-					"The parameters specified after a parameter with a default "
-					"value has been specified must also have default "
-					"parameters."
-				)
-
-		return True
-
 	def resolve_arguments(self, *args, **kwargs):
+		"""
+		Takes a list of positional arguments and keyword arguments and
+		determines which parameter each argument is a value for.
+
+		:returns: A dictionary of paramater names and the values for each of
+				them.
+
+		"""
+
 		# TODO: Implement type checking.
 	    result = {}
 

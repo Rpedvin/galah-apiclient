@@ -18,7 +18,7 @@
 # limitations under the License.
 
 if __name__ != "__main__":
-    raise ImportError("This is a script and should not be imported.")
+    raise ImportError("This is a script and cannot be imported.")
 
 import sys
 import pprint
