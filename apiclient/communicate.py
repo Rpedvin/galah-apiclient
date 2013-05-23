@@ -25,10 +25,11 @@ import pickle
 import os
 import os.path
 import sys
-import function
 import time
 import urlparse
+import copy
 
+import function
 import config
 import utils
 import ui
@@ -50,15 +51,24 @@ def _parse_api_info(api_info):
 
     result = {}
     for command in api_info:
-        result[command["name"]] = function.Function(
-            name = command["name"],
-            params = [
+        parameters = []
+        for i in command.get("args", []):
+            if i.get("takes_file", False):
+                parameter_type = file
+            else:
+                parameter_type = str
+
+            parameters.append(
                 function.Function.Parameter(
                     name = i["name"],
                     default_value = i.get("default_value"),
-                    param_type = str
-                ) for i in command.get("args", [])
-            ]
+                    param_type = parameter_type
+                )
+            )
+
+        result[command["name"]] = function.Function(
+            name = command["name"],
+            params = parameters
         )
 
     return result
@@ -283,6 +293,11 @@ class APIClientSession:
             pprint.pformat(request, width = 72)
         )
 
+        for i in self.api_info[command].params:
+            if i.param_type is file:
+                logger.debug("Loading file for parameter %s.", i.name)
+                request[i.name] = open(request[i.name], "rb")
+
         logger.info(
             "Executing %s command on Galah as user %s.", command, self.user
         )
@@ -349,15 +364,30 @@ class APIClientSession:
 
         """
 
+        request = copy.copy(request)
+
+         # Extract any files
+        file_args = {}
+        for i in (k for k, v in request.items() if isinstance(v, file)):
+            file_args[str(i)] = request.pop(i)
+
         try:
             requester = self._requester()
 
-            return requester.post(
-                config.CONFIG["host"] + "/api/call",
-                data = utils.to_json(request),
-                headers = {"Content-Type": "application/json"},
-                verify = not config.CONFIG.get("no-verify-certificate", False)
-            )
+            if not file_args:
+                return requester.post(
+                    config.CONFIG["host"] + "/api/call",
+                    data = utils.to_json(request),
+                    headers = {"Content-Type": "application/json"},
+                    verify = not config.CONFIG.get("no-verify-certificate", False)
+                )
+            else:
+                return requester.post(
+                    config.CONFIG["host"] + "/api/call",
+                    data = {"request": utils.to_json(request)},
+                    files = file_args,
+                    verify = not config.CONFIG.get("no-verify-certificate", False)
+                )
         except requests.exceptions.ConnectionError as e:
             logger.critical(
                 "Galah did not respond at %s.",
