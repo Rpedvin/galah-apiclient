@@ -46,9 +46,9 @@ def requests_module():
     try:
         import requests
     except ImportError:
-        logger.critical(
-            "Could not load the requests library.",
-            exc_info = sys.exc_info()
+        raise ImportError(
+            "Could not load the requests library. Please install requests "
+            "to correct this problem."
         )
     return requests
 
