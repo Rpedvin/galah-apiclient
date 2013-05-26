@@ -21,6 +21,11 @@ setup(
     url = "https://www.github.com/galah-group/galah-apiclient",
     packages = find_packages(),
     long_description = read("README.md"),
+    entry_points = {
+        "console_scripts": [
+            "galah = apiclient.main:main"
+        ]
+    },
     install_requires = [
         "rauth==0.5.4"
     ],
