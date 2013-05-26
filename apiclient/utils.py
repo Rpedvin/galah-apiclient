@@ -81,6 +81,22 @@ def requests_module():
 
     return requests
 
+def rauth_module():
+    """
+    Imports the rauth module and returns it.
+
+    """
+
+    try:
+        import rauth
+    except ImportError:
+        raise ImportError(
+            "Could not load the rauth library. Please install rauth to "
+            "correct this problem"
+        )
+
+    return rauth
+
 import os.path
 def resolve_path(path):
     """

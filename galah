@@ -45,34 +45,34 @@ exit_now = False
 
 # If the user wants to logout...
 if config.CONFIG.get("logout"):
-	session_path = config.CONFIG["session-path"]
-	if os.path.isfile(session_path):
-		logger.info("Deleting session file at %s.", session_path)
-		os.remove(session_path)
-	else:
-		logger.info(
-			"No session file exists at %s. Doing nothing.",
-			session_path
-		)
+    session_path = config.CONFIG["session-path"]
+    if os.path.isfile(session_path):
+        logger.info("Deleting session file at %s.", session_path)
+        os.remove(session_path)
+    else:
+        logger.info(
+            "No session file exists at %s. Doing nothing.",
+            session_path
+        )
 
-	exit_now = True
+    exit_now = True
 
 # If the user wants to clear the cache...
 if config.CONFIG.get("clear-api-info"):
-	api_info_path = config.CONFIG["api-info-path"]
-	if os.path.isfile(api_info_path):
-		logger.info("Deleting session file at %s.", api_info_path)
-		os.remove(api_info_path)
-	else:
-		logger.info(
-			"No session file exists at %s. Doing nothing.",
-			api_info_path
-		)
+    api_info_path = config.CONFIG["api-info-path"]
+    if os.path.isfile(api_info_path):
+        logger.info("Deleting session file at %s.", api_info_path)
+        os.remove(api_info_path)
+    else:
+        logger.info(
+            "No session file exists at %s. Doing nothing.",
+            api_info_path
+        )
 
-	exit_now = True
+    exit_now = True
 
 if exit_now:
-	sys.exit(0)
+    sys.exit(0)
 
 # Grab the user's old session information if they are already logged in.
 import apiclient.communicate
@@ -84,7 +84,11 @@ save_session = False
 # Login if necessary
 import apiclient.ui
 if session.user is None:
-    session.login(*apiclient.ui.determine_credentials())
+    if config.CONFIG.get("use-oauth"):
+        session.login_oauth2()
+    else:
+        session.login(*apiclient.ui.determine_credentials())
+
     save_session = True
 
 # Request the API info from the server if we don't have it cached
@@ -95,31 +99,31 @@ if session.api_info is None:
 # Save the session if we had to login or if we replenished our cache (because
 # they are tied together artificially by our design).
 if save_session:
-	session.save()
+    session.save()
 
 # Enter the shell or execute a command.
-if config.CONFIG["shell"]:
-	import apiclient.shell
-	new_shell = apiclient.shell.APIShell(session)
+if config.CONFIG.get("shell"):
+    import apiclient.shell
+    new_shell = apiclient.shell.APIShell(session)
 
-	try:
-		new_shell.cmdloop()
-	except KeyboardInterrupt:
-		while True:
-			try:
-				new_shell.cmdloop("")
-			except KeyboardInterrupt:
-				print "\nInterrupted..."
-			else:
-				break
+    try:
+        new_shell.cmdloop()
+    except KeyboardInterrupt:
+        while True:
+            try:
+                new_shell.cmdloop("")
+            except KeyboardInterrupt:
+                print "\nInterrupted..."
+            else:
+                break
 
-	print "Exiting..."
+    print "Exiting..."
 else:
-	# Perform the command the user wants to execute
-	command_args, command_kwargs = apiclient.ui.parse_raw_args(config.ARGS)
+    # Perform the command the user wants to execute
+    command_args, command_kwargs = apiclient.ui.parse_raw_args(config.ARGS)
 
-	if command_args:
-		session.call(command_args[0], *command_args[1:], **command_kwargs)
-	else:
-		logger.info("No command given. Doing nothing...")
+    if command_args:
+        session.call(command_args[0], *command_args[1:], **command_kwargs)
+    else:
+        logger.info("No command given. Doing nothing...")
 

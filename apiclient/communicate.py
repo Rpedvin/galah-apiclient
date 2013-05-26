@@ -28,6 +28,7 @@ import sys
 import time
 import urlparse
 import copy
+import webbrowser
 
 import function
 import config
@@ -113,7 +114,15 @@ class APIClientSession:
 
                 with open(session_file_path, "w") as f:
                     os.chmod(session_file_path, 0o600)
-                    pickle.dump((self.user, self.requests_session), f)
+                    pickle.dump(
+                        (
+                            self.user,
+                            requests.utils.dict_from_cookiejar(
+                                self.requests_session.cookies
+                            )
+                        ),
+                        f
+                    )
             except IOError:
                 logger.warn(
                     "Could not save session to %s.",
@@ -155,7 +164,19 @@ class APIClientSession:
 
             try:
                 with open(session_file_path, "r") as f:
-                    self.user, self.requests_session = pickle.load(f)
+                    try:
+                        self.user, raw_cookie_jar = pickle.load(f)
+                        self.requests_session = requests.session()
+                        self.requests_session.cookies = \
+                            requests.utils.cookiejar_from_dict(raw_cookie_jar)
+                    except:
+                        logger.critical(
+                            "Could not load cached request object. Try "
+                            "clearing it with --logout or trying again.",
+                            exc_info = sys.exc_info()
+                        )
+
+                        sys.exit(1)
             except IOError:
                 logger.warn(
                     "Could not load session from %s." %
@@ -201,7 +222,7 @@ class APIClientSession:
         session = requests.session()
 
         request = session.post(
-            config.CONFIG["host"] + "/api/login",
+            urlparse.urljoin(config.CONFIG["host"], "/api/login"),
             data = {"email": email, "password": password}
         )
 
@@ -214,6 +235,92 @@ class APIClientSession:
 
         self.user = email
         self.requests_session = session
+
+        logger.info("Logged in as %s.", self.user)
+
+    def login_oauth2(self):
+        """
+        Attempts to authenticate user for Galah using Google OAuth2.
+
+        """
+
+        # Grab OAuth2 API keys
+        logger.info("Grabbing OAuth2 API keys from Galah.")
+        oauth_keys_request = self._send_api_command(
+            {"api_name": "get_oauth2_keys"}
+        )
+        if oauth_keys_request.status_code != requests.codes.ok:
+            logger.critical("Could not get OAuth2 keys from Galah.")
+            sys.exit(1)
+        google_api_keys = oauth_keys_request.json()
+        logger.debug(
+            "Galah responded with...\n%s", pprint.pformat(google_api_keys)
+        )
+
+        google = utils.rauth_module().OAuth2Service(
+            client_id = google_api_keys["CLIENT_ID"],
+            client_secret = google_api_keys["CLIENT_SECRET"],
+            name = "google",
+            authorize_url = "/o/oauth2/auth",
+            access_token_url = "/o/oauth2/token",
+            base_url = "https://accounts.google.com/"
+        )
+
+        # See https://developers.google.com/accounts/docs/OAuth2InstalledApp#formingtheurl
+        params = {
+            "scope": "https://www.googleapis.com/auth/userinfo.email",
+            "response_type": "code",
+            "redirect_uri": "urn:ietf:wg:oauth:2.0:oob"
+        }
+        if "user" in config.CONFIG:
+            params["login_hint"] = config.CONFIG["user"]
+
+        webbrowser.open(urlparse.urljoin(
+            google.base_url,
+            google.get_authorize_url(**params)
+        ));
+        # Necessary because we can't tell webbrowser not to print anything
+        # to sstandard out
+        time.sleep(5)
+        auth_token = \
+            raw_input("Please paste the token from your webbrowser: ")
+
+        logger.debug("Trying to get access token from google.")
+        access_token = google.get_access_token(
+            decoder = utils.json_module().loads,
+            data = {
+                "code": auth_token,
+                "redirect_uri": "urn:ietf:wg:oauth:2.0:oob",
+                "grant_type": "authorization_code"
+            }
+        )
+
+        # Verify that the user succesfully logged in and figure out what email
+        # they used to do it.
+        token_info_request = requests.post(
+            "https://www.googleapis.com/oauth2/v1/tokeninfo",
+            data = {"access_token": access_token}
+        )
+        if token_info_request.status_code != requests.codes.ok:
+            logger.critical("Invalid OAuth2 login.")
+
+            sys.exit(1)
+        self.user = token_info_request.json()["email"]
+
+        logger.debug("Trying to get an authenticated session from Galah.")
+
+        # Use the token we got from google to initialize an authenticated
+        # session on the Galah server.
+        self.requests_session = requests.session()
+        request = self.requests_session.post(
+            urlparse.urljoin(config.CONFIG["host"], "/api/login"),
+            data = {"access_token": access_token}
+        )
+        logger.debug("Galah responded with...\n%s", request.text)
+        if request.status_code != requests.codes.ok or \
+                request.headers["X-CallSuccess"] != "True":
+            logger.critical("Could not authenticate with Galah.")
+            sys.exit(1)
 
         logger.info("Logged in as %s.", self.user)
 
@@ -376,14 +483,14 @@ class APIClientSession:
 
             if not file_args:
                 return requester.post(
-                    config.CONFIG["host"] + "/api/call",
+                    urlparse.urljoin(config.CONFIG["host"], "/api/call"),
                     data = utils.to_json(request),
                     headers = {"Content-Type": "application/json"},
                     verify = not config.CONFIG.get("no-verify-certificate", False)
                 )
             else:
                 return requester.post(
-                    config.CONFIG["host"] + "/api/call",
+                    urlparse.urljoin(config.CONFIG["host"], "/api/call"),
                     data = {"request": utils.to_json(request)},
                     files = file_args,
                     verify = not config.CONFIG.get("no-verify-certificate", False)
@@ -391,7 +498,7 @@ class APIClientSession:
         except requests.exceptions.ConnectionError as e:
             logger.critical(
                 "Galah did not respond at %s.",
-                config.CONFIG["host"] + "/api/call",
+                urlparse.urljoin(config.CONFIG["host"], "/api/call"),
                 exc_info = sys.exc_info()
             )
             sys.exit(1)
