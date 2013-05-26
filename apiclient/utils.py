@@ -109,7 +109,7 @@ def resolve_paths(paths):
 
     """
 
-	return [resolve_path(i) for i in paths]
+    return [resolve_path(i) for i in paths]
 
 def to_json(obj):
     """

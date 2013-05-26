@@ -173,6 +173,13 @@ def parse_arguments(args = sys.argv[1:]):
                 "If set, the script will clear the API Info cache and then "
                 "exit immediately"
         ),
+        make_option(
+            "--shell", "-s", action = "store_true",
+            help =
+                "If set, after signing in you will be placed into an "
+                "interactive shell where you can execute API commands more "
+                "conveniently."
+        )
     ]
 
     # Go through the configuration options and map them to command line options

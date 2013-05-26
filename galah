@@ -30,7 +30,7 @@ import logging
 apiclient.logcontrol.init_logging()
 logger = logging.getLogger("apiclient")
 
-# Load up the configuration
+# Load up the configuration, this includes parsing any command line arguments.
 import apiclient.config as config
 config.CONFIG = config.load_config()
 if "verbosity" in config.CONFIG:
@@ -43,6 +43,7 @@ logger.debug(
 # Set to True by any of the "do something and exit" options.
 exit_now = False
 
+# If the user wants to logout...
 if config.CONFIG.get("logout"):
 	session_path = config.CONFIG["session-path"]
 	if os.path.isfile(session_path):
@@ -56,6 +57,7 @@ if config.CONFIG.get("logout"):
 
 	exit_now = True
 
+# If the user wants to clear the cache...
 if config.CONFIG.get("clear-api-info"):
 	api_info_path = config.CONFIG["api-info-path"]
 	if os.path.isfile(api_info_path):
@@ -72,7 +74,7 @@ if config.CONFIG.get("clear-api-info"):
 if exit_now:
 	sys.exit(0)
 
-# Grab the user's old session information.
+# Grab the user's old session information if they are already logged in.
 import apiclient.communicate
 session = apiclient.communicate.APIClientSession()
 session.load()
@@ -85,19 +87,39 @@ if session.user is None:
     session.login(*apiclient.ui.determine_credentials())
     save_session = True
 
-# Request the API info from the server if
+# Request the API info from the server if we don't have it cached
 if session.api_info is None:
     session.fetch_api_info()
     save_session = True
 
+# Save the session if we had to login or if we replenished our cache (because
+# they are tied together artificially by our design).
 if save_session:
 	session.save()
 
-# Perform the command the user wants to execute
-command_args, command_kwargs = apiclient.ui.parse_raw_args(config.ARGS)
+# Enter the shell or execute a command.
+if config.CONFIG["shell"]:
+	import apiclient.shell
+	new_shell = apiclient.shell.APIShell(session)
 
-if command_args:
-	session.call(command_args[0], *command_args[1:], **command_kwargs)
+	try:
+		new_shell.cmdloop()
+	except KeyboardInterrupt:
+		while True:
+			try:
+				new_shell.cmdloop("")
+			except KeyboardInterrupt:
+				print "\nInterrupted..."
+			else:
+				break
+
+	print "Exiting..."
 else:
-	logger.info("No command given. Doing nothing...")
+	# Perform the command the user wants to execute
+	command_args, command_kwargs = apiclient.ui.parse_raw_args(config.ARGS)
+
+	if command_args:
+		session.call(command_args[0], *command_args[1:], **command_kwargs)
+	else:
+		logger.info("No command given. Doing nothing...")
 
