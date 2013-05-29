@@ -43,7 +43,7 @@ pip install -d . requests
 # is named requests.
 tar xzf requests-*.tar.gz
 rm requests-*.tar.gz
-mv requests-* requests
+mv requests-*/requests requests
 
 mv requests $TEMP_DIR/
 cd $TEMP_DIR
@@ -60,7 +60,7 @@ pip install -d . pyyaml
 # is named requests.
 unzip PyYAML-*.zip
 rm PyYAML-*.zip
-mv PyYAML-* yaml
+mv PyYAML-*/lib/yaml yaml
 
 mv yaml $TEMP_DIR/
 cd $TEMP_DIR
