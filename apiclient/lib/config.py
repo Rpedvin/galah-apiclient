@@ -179,6 +179,14 @@ def parse_arguments(args = sys.argv[1:]):
                 "If set, after signing in you will be placed into an "
                 "interactive shell where you can execute API commands more "
                 "conveniently."
+        ),
+        make_option(
+            "--save", action = "store_true",
+            help =
+                "If set, whatever the currently loaded configuration is, "
+                "including any command line arguments, will be saved to the "
+                "current user's default configuration (%s)." %
+                    (DEFAULT_CONFIG_PATHS[0], )
         )
     ]
 
@@ -214,6 +222,19 @@ def parse_arguments(args = sys.argv[1:]):
     options, args = parser.parse_args(args)
 
     return (options, args)
+
+def dump_config():
+    """
+    Serailizes configuration into YAML and returns the result as a string.
+
+    """
+
+    config = {}
+    for i in __option_list:
+        if i.name in CONFIG:
+            config[i.name] = CONFIG[i.name]
+
+    return utils.yaml_module().safe_dump(config)
 
 def load_config():
     """

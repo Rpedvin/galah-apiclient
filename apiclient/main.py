@@ -70,6 +70,36 @@ def main():
 
         exit_now = True
 
+    # If the user wants to save their configuration
+    if config.CONFIG.get("save"):
+        import lib.utils
+
+        save_to = config.CONFIG.get("config", config.DEFAULT_CONFIG_PATHS[0])
+        save_to = lib.utils.resolve_path(save_to)
+
+        logger.info("Saving configuration settings to %s.", save_to)
+
+        serialized_config = lib.config.dump_config()
+        logger.debug("Configuration...\n%s", serialized_config)
+
+        try:
+            config_dir = os.path.dirname(save_to)
+            if not os.path.exists(config_dir):
+                logger.debug("Creating %s directory.", config_dir)
+                lib.utils.prepare_directory(config_dir)
+
+            with open(save_to, "w") as f:
+                f.write(serialized_config)
+        except IOError:
+            logger.critical(
+                "Could not save configuration.", exc_info = sys.exc_info()
+            )
+            sys.exit(1)
+
+        logger.info("Successfully saved configuration settings.")
+
+        exit_now = True
+
     if exit_now:
         sys.exit(0)
 

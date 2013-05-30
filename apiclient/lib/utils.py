@@ -166,12 +166,10 @@ def prepare_directory(path, permissions = 0o700):
 
     """
 
-    directory = os.path.dirname(path)
-
-    if os.path.isdir(directory):
+    if os.path.exists(path):
         return False
 
-    os.makedirs(directory, permissions)
+    os.makedirs(path, permissions)
     return True
 
 HOME_DIR = os.path.expanduser("~")
