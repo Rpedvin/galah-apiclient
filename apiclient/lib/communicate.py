@@ -106,7 +106,7 @@ class APIClientSession:
             logger.info("Saving session to %s.", session_file_path)
 
             try:
-                if utils.prepare_directory(session_file_path):
+                if utils.prepare_directory(os.path.dirname(session_file_path)):
                     logger.info(
                         "Created directory(s) %s.",
                         os.path.dirname(session_file_path)
@@ -136,7 +136,7 @@ class APIClientSession:
             logger.info("Saving API info to %s.", api_info_file_path)
 
             try:
-                if utils.prepare_directory(api_info_file_path):
+                if utils.prepare_directory(os.path.dirname(api_info_file_path)):
                     logger.info(
                         "Created directory(s) %s.",
                         os.path.dirname(api_info_file_path)
