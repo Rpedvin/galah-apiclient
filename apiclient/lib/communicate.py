@@ -592,7 +592,7 @@ class APIClientSession:
             # Ask the server for the file
             try:
                 file_request = self.requests_session.get(
-                    url, timeout = 1, stream = True
+                    url, timeout = 1, stream = True, verify = _get_verify()
                 )
             except requests.exceptions.Timeout:
                 logger.info(

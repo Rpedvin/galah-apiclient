@@ -215,7 +215,10 @@ def postfix_file_name(file_name, suffix):
         'myfile walrus.exe'
     """
 
-    file_name, extension = os.path.splitext(file_name)
+    if file_name.endswith(".tar.gz"):
+        file_name, extension = file_name[0:-len(".tar.gz")], ".tar.gz"
+    else:
+        file_name, extension = os.path.splitext(file_name)
 
     return str(file_name) + str(suffix) + str(extension)
 
