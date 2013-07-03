@@ -334,14 +334,16 @@ class APIClientSession:
                 "code": auth_token,
                 "redirect_uri": "urn:ietf:wg:oauth:2.0:oob",
                 "grant_type": "authorization_code"
-            }
+            },
+            verify = _get_verify()
         )
 
         # Verify that the user succesfully logged in and figure out what email
         # they used to do it.
         token_info_request = requests.post(
             "https://www.googleapis.com/oauth2/v1/tokeninfo",
-            data = {"access_token": access_token}
+            data = {"access_token": access_token},
+            verify = _get_verify()
         )
         if token_info_request.status_code != requests.codes.ok:
             logger.critical("Invalid OAuth2 login.")
