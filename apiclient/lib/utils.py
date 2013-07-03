@@ -248,3 +248,5 @@ def find_available_file(file_path):
 
     return os.path.join(directory, postfix_file_name(file_name, suffix))
 
+def open_secure_file(path):
+    return os.fdopen(os.open(path, os.O_WRONLY | os.O_CREAT, 0o600), "w")

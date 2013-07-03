@@ -96,6 +96,15 @@ __option_list = [
             "updated by the API client."
     ),
     ConfigOption(
+        "ca-certs-path", default_value = "~/.cache/galah/ca_certs",
+        data_type = Path,
+        description =
+            "The location of the file containing a collection of certificate "
+            "authority certificates. This is used when verifying SSL "
+            "connections. If the file does not exist, a file with a default "
+            "set of certificates will be placed there."
+    ),
+    ConfigOption(
         "downloads-directory", default_value = "~/Downloads/",
         data_type = Path,
         description =
@@ -168,7 +177,7 @@ def parse_arguments(args = sys.argv[1:]):
                 "immediately. Logging you out means removing the session file."
         ),
         make_option(
-            "--clear-api-info", action = "store_true", dest="clear-api-info",
+            "--clear-api-info", action = "store_true", dest = "clear-api-info",
             help =
                 "If set, the script will clear the API Info cache and then "
                 "exit immediately"
@@ -347,8 +356,7 @@ def load_config():
             sys.exit(1)
 
     # Go through and resolve any paths
-    for i in (j.name for j in KNOWN_OPTIONS.values()
-            if j.data_type is Path):
+    for i in (j.name for j in KNOWN_OPTIONS.values() if j.data_type is Path):
         if i in final_config:
             final_config[i] = utils.resolve_path(final_config[i])
 

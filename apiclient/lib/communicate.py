@@ -29,6 +29,8 @@ import time
 import urlparse
 import copy
 import webbrowser
+import pkg_resources
+import shutil
 
 import function
 import config
@@ -73,6 +75,45 @@ def _parse_api_info(api_info):
         )
 
     return result
+
+def _get_authorities_file():
+    """
+    Returns the path to the file containing the certificate authorities'
+    signing certificates. Creates the file if it doesn't exist.
+
+    """
+
+    if os.path.isfile(config.CONFIG["ca-certs-path"]):
+        logger.debug(
+            "Using ca-certs file at '%s'.",
+            config.CONFIG["ca-certs-path"]
+        )
+    else:
+        logger.warning(
+            "No ca-certs file found, writing default file to '%s'.",
+            config.CONFIG["ca-certs-path"]
+        )
+
+        source = pkg_resources.resource_stream("requests.utils", "cacert.pem")
+        dest = utils.open_secure_file(config.CONFIG["ca-certs-path"])
+
+        shutil.copyfileobj(source, dest)
+
+        source.close()
+        dest.close()
+
+    return config.CONFIG["ca-certs-path"]
+
+def _get_verify():
+    """
+    Returns the appropriate value to provide as the verify parameter for calls
+    to requests.
+    """
+
+    if config.CONFIG.get("no-verify-certificate", False):
+        return False
+    else:
+        return _get_authorities_file()
 
 class APIClientSession:
     """
@@ -223,7 +264,8 @@ class APIClientSession:
 
         request = session.post(
             urlparse.urljoin(config.CONFIG["host"], "/api/login"),
-            data = {"email": email, "password": password}
+            data = {"email": email, "password": password},
+            verify = _get_verify()
         )
 
         request.raise_for_status()
@@ -314,7 +356,8 @@ class APIClientSession:
         self.requests_session = requests.session()
         request = self.requests_session.post(
             urlparse.urljoin(config.CONFIG["host"], "/api/login"),
-            data = {"access_token": access_token}
+            data = {"access_token": access_token},
+            verify = _get_verify()
         )
         logger.debug("Galah responded with...\n%s", request.text)
         if request.status_code != requests.codes.ok or \
@@ -374,8 +417,8 @@ class APIClientSession:
 
         if command not in self.api_info:
             logger.critical(
-                "%s is not a known command. You can try using --clear-api-info "
-                "to reload the list of available commands.",
+                "%s is not a known command. You can try using "
+                " --clear-api-info to reload the list of available commands.",
                 command
             )
             sys.exit(1)
@@ -486,14 +529,14 @@ class APIClientSession:
                     urlparse.urljoin(config.CONFIG["host"], "/api/call"),
                     data = utils.to_json(request),
                     headers = {"Content-Type": "application/json"},
-                    verify = not config.CONFIG.get("no-verify-certificate", False)
+                    verify = _get_verify()
                 )
             else:
                 return requester.post(
                     urlparse.urljoin(config.CONFIG["host"], "/api/call"),
                     data = {"request": utils.to_json(request)},
                     files = file_args,
-                    verify = not config.CONFIG.get("no-verify-certificate", False)
+                    verify = _get_verify()
                 )
         except requests.exceptions.ConnectionError as e:
             logger.critical(
