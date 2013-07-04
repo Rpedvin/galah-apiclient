@@ -23,14 +23,50 @@ standard library module.
 
 import sys
 
+import pretty
+
 import logging
 logger = logging.getLogger("apiclient.logcontrol")
+
+class LogFormatter(logging.Formatter):
+    COLOR_MAP = {
+        "DEBUG": "dark gray",
+        "INFO": "green",
+        "WARNING": "yellow",
+        "ERROR": "red",
+        "CRITICAL": "bright red"
+    }
+
+    def __init__(self, *args, **kwargs):
+        logging.Formatter.__init__(self, *args, **kwargs)
+
+    def format(self, record):
+        result = []
+
+        result.append(pretty.color(
+            record.levelname, LogFormatter.COLOR_MAP[record.levelname]
+        ))
+
+        result.append(": ")
+
+        result.append(record.msg % record.args)
+
+        if "\n" in result[-1]:
+            result.append("\n" + pretty.color("-" * 72, "bright gray"))
+
+        return "".join(result)
 
 def init_logging():
     """Set up the logger with default values."""
 
-    logging.basicConfig(format = "%(levelname)s - %(message)s\n" + "-" * 72)
-    set_level("INFO")
+    default_handler = logging.StreamHandler()
+    default_handler.setFormatter(
+        LogFormatter(fmt = "%(levelname)s - %(message)s")
+    )
+
+    root_logger = logging.getLogger("apiclient")
+    root_logger.addHandler(default_handler)
+    root_logger.setLevel(logging.INFO)
 
 def set_level(log_level):
     """Set the log level."""
