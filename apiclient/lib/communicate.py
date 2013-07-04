@@ -29,8 +29,14 @@ import time
 import urlparse
 import copy
 import webbrowser
-import pkg_resources
 import shutil
+
+# pkg_resources doesn't like being imported inside of a super zip very much so
+# we want to supress its warnings.
+import warnings
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore")
+    import pkg_resources
 
 import function
 import config
