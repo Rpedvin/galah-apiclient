@@ -274,10 +274,9 @@ class APIClientSession:
             verify = _get_verify()
         )
 
-        request.raise_for_status()
-
         # Check if we successfully logged in.
-        if request.headers["X-CallSuccess"] != "True":
+        if request.status_code != 200 or \
+                request.headers["X-CallSuccess"] != "True":
             logger.critical("Could not log in with given credientials.")
             sys.exit(1)
 
