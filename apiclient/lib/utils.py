@@ -252,4 +252,17 @@ def find_available_file(file_path):
     return os.path.join(directory, postfix_file_name(file_name, suffix))
 
 def open_secure_file(path):
-    return os.fdopen(os.open(path, os.O_WRONLY | os.O_CREAT, 0o600), "w")
+    try:
+        if prepare_directory(os.path.dirname(path)):
+            logger.info(
+                "Created directory(s) %s.",
+                os.path.dirname(path)
+            )
+
+        return os.fdopen(os.open(path, os.O_WRONLY | os.O_CREAT, 0o600), "w")
+    except IOError:
+        logger.warn(
+            "Could not open file %s.",
+            path,
+            exc_info = sys.exc_info()
+        )
