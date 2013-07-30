@@ -21,6 +21,9 @@ modules.
 
 """
 
+import logging
+logging.getLogger("apiclient.utils")
+
 def json_module():
     """
     A handy function that will try to find a suitable JSON module to import and
@@ -266,3 +269,5 @@ def open_secure_file(path):
             path,
             exc_info = sys.exc_info()
         )
+
+        return None
