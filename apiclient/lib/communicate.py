@@ -463,7 +463,7 @@ class APIClientSession:
 
         if r.headers.get("X-CallSuccess") != "True":
             logger.info(
-                "The server sent back...\n%s\n--End Server Response--",
+                "The server sent back...\n%s",
                 r.text
             )
             if "X-ErrorType" not in r.headers:
@@ -556,8 +556,9 @@ class APIClientSession:
             logger.critical(
                 "Galah did not respond at %s.",
                 urlparse.urljoin(config.CONFIG["host"], "/api/call"),
-                exc_info = sys.exc_info()
+                exc_info = True
             )
+
             sys.exit(1)
 
     def download(self, url, file_name):

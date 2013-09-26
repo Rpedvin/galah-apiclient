@@ -51,6 +51,12 @@ class LogFormatter(logging.Formatter):
 
         result.append(record.msg % record.args)
 
+        if record.exc_info:
+            if type(record.exc_info) is tuple:
+                result.append("\n" + self.formatException(record.exc_info))
+            else:
+                result.append("\n" + self.formatException(sys.exc_info()))
+
         if "\n" in result[-1]:
             result.append("\n" + pretty.color("-" * 72, "bright gray"))
 
