@@ -552,7 +552,15 @@ class APIClientSession:
                     files = file_args,
                     verify = _get_verify()
                 )
-        except requests.exceptions.ConnectionError as e:
+        except requests.exceptions.SSLError as e:
+            logger.critical(
+                "There was a problem with communicating via SSL: %s.",
+                str(e),
+                exc_info = True
+            )
+
+            sys.exit(1)
+        except requests.exceptions.ConnectionError:
             logger.critical(
                 "Galah did not respond at %s.",
                 urlparse.urljoin(config.CONFIG["host"], "/api/call"),
