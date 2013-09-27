@@ -116,6 +116,12 @@ __option_list = [
         description =
             "The desired logging level. Choices are %s." %
                 (", ".join(logcontrol.LOG_LEVELS), )
+    ),
+    ConfigOption(
+        "show-tracebacks", default_value = False,
+        description =
+            "Whether to display trace backs when *expected* exceptions are "
+            "encountered."
     )
 ]
 KNOWN_OPTIONS = dict((i.name, i) for i in __option_list)
@@ -297,7 +303,6 @@ def load_config():
             if os.path.isfile(i):
                 config_file_path = i
                 break
-
     configuration = {}
     if config_file_path is None:
         logger.info("No configuration file found.")
@@ -336,7 +341,7 @@ def load_config():
     # Make a dictionary with the default values in it
     default_configuration = dict(
         (i.name, i.default_value) for i in KNOWN_OPTIONS.values()
-                if i.default_value
+                if i.default_value is not None
     )
 
     # Join the various dictionaries we have together. Priority is bottom-to-top.

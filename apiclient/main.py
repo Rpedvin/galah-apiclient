@@ -38,6 +38,7 @@ def main():
         "Final configuration dictionary...\n%s",
         pprint.pformat(config.CONFIG, width = 72)
     )
+    lib.logcontrol.show_tracebacks = config.CONFIG["show-tracebacks"]
 
     # Set to True by any of the "do something and exit" options.
     exit_now = False

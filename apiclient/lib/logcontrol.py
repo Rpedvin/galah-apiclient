@@ -28,6 +28,8 @@ import pretty
 import logging
 logger = logging.getLogger("apiclient.logcontrol")
 
+show_tracebacks = False
+
 class LogFormatter(logging.Formatter):
     COLOR_MAP = {
         "DEBUG": "dark gray",
@@ -51,7 +53,7 @@ class LogFormatter(logging.Formatter):
 
         result.append(record.msg % record.args)
 
-        if record.exc_info:
+        if record.exc_info and show_tracebacks:
             if type(record.exc_info) is tuple:
                 result.append("\n" + self.formatException(record.exc_info))
             else:
