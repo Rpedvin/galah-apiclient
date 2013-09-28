@@ -22,7 +22,7 @@ modules.
 """
 
 import logging
-logging.getLogger("apiclient.utils")
+logger = logging.getLogger("apiclient.utils")
 
 def json_module():
     """
