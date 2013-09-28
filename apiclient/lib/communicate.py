@@ -268,11 +268,28 @@ class APIClientSession:
 
         session = requests.session()
 
-        request = session.post(
-            urlparse.urljoin(config.CONFIG["host"], "/api/login"),
-            data = {"email": email, "password": password},
-            verify = _get_verify()
-        )
+        try:
+            request = session.post(
+                urlparse.urljoin(config.CONFIG["host"], "/api/login"),
+                data = {"email": email, "password": password},
+                verify = _get_verify()
+            )
+        except requests.exceptions.SSLError as e:
+            logger.critical(
+                "There was a problem with communicating via SSL: %s.",
+                str(e),
+                exc_info = True
+            )
+
+            sys.exit(1)
+        except requests.exceptions.ConnectionError:
+            logger.critical(
+                "Galah did not respond at %s.",
+                urlparse.urljoin(config.CONFIG["host"], "/api/call"),
+                exc_info = True
+            )
+
+            sys.exit(1)
 
         # Check if we successfully logged in.
         if request.status_code != 200 or \
