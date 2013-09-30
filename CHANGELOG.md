@@ -1,5 +1,12 @@
 # Changelog
 
+## Version 1.0-beta.3 (Sept 30, 2013)
+
+A couple of bug fixes (non-critical).
+
+ * An exception that occured before exiting after creating temporary folders was fixed.
+ * Improved logging in a few places.
+
 ## Version 1.0-beta.2 (Sept 27, 2013)
 
 A number of very useful bug fixes.
