@@ -470,7 +470,15 @@ class APIClientSession:
         for i in self.api_info[command].params:
             if i.param_type is file:
                 logger.debug("Loading file for parameter %s.", i.name)
-                request[i.name] = open(request[i.name], "rb")
+                try:
+                    request[i.name] = open(request[i.name], "rb")
+                except IOError:
+                    logger.critical(
+                        "Could not load file at %s.", request[i.name],
+                        exc_info = True
+                    )
+
+                    sys.exit(1)
 
         logger.info(
             "Executing %s command on Galah as user %s.", command, self.user
