@@ -20,6 +20,7 @@ setup(
     keywords = "galah",
     url = "https://www.github.com/galah-group/galah-apiclient",
     packages = find_packages(),
+    namespace_packages = ["galah", "galah.test"],
     long_description = read("README.md"),
     entry_points = {
         "console_scripts": [
