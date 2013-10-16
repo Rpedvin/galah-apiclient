@@ -54,6 +54,7 @@ class APIShell(cmd.Cmd):
 		except SystemExit:
 			pass
 		except KeyboardInterrupt:
+			print
 			print "Interrupted..."
 
 	def do_help(self, arg):
@@ -75,9 +76,18 @@ class APIShell(cmd.Cmd):
 		print
 		return True
 
+	def completedefault(self, text, line, begidx, endidx):
+		cmd_args = shlex.split(line)
+		cmd_info = self.session.api_info.get(cmd_args[0])
+		print
+		print "cmd_args:", cmd_args
+		print "cmd_info:", cmd_info
+		print text, line, begidx, endidx
+
 	def get_names(self):
 		"""
-		Overrides undocumented `get_names` function to allow command completion.
+		Overrides undocumented `get_names` function to allow command
+		completion.
 
 		"""
 

@@ -58,14 +58,14 @@ __option_list = [
     ConfigOption(
         "use-oauth", default_value = False,
         description =
-            "If set, authentication will be done via OAuth rather than "
+            "If True, authentication will be done via OAuth rather than "
             "internal auth over HTTP(S)."
     ),
     ConfigOption(
-        "no-verify-certificate", default_value = False,
+        "verify-certificate", default_value = True,
         description =
-            "If set, when connecting over HTTPS, the certificate presented by "
-            "the server will not be authenticated with a known certificate "
+            "If True, when connecting over HTTPS, the certificate presented "
+            "by the server will not be authenticated with a known certificate "
             "authority."
     ),
     ConfigOption(
