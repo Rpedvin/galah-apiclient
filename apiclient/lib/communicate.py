@@ -616,6 +616,11 @@ class APIClientSession:
 
         """
         downloads_directory = config.CONFIG["downloads-directory"]
+        if utils.prepare_directory(downloads_directory):
+            logger.info(
+                "Created directory(s) %s.",
+                downloads_directory
+            )
 
         # Find an available file path
         final_file_path = utils.find_available_file(
