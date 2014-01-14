@@ -487,12 +487,11 @@ class APIClientSession:
         r = self._send_api_command(request)
 
         if r.headers.get("X-CallSuccess") != "True":
-            logger.info(
-                "The server sent back...\n%s",
-                r.text
-            )
             if "X-ErrorType" not in r.headers:
-                logger.critical("Unknown failure on server.")
+                logger.critical(
+                    "Unknown failure on server. The server sent back '%s'",
+                    r.text
+                )
             elif r.headers["X-ErrorType"] == "PermissionError":
                 logger.critical(
                     "You do not have sufficient permissions to use that "
@@ -500,8 +499,9 @@ class APIClientSession:
                 )
             else:
                 logger.critical(
-                    "The server returned an error of type '%s'.",
-                    r.headers["X-CallSuccess"]
+                    "The server returned an error of type '%s'. The server "
+                    "sent back:\n%s", r.headers["X-CallSuccess"],
+                    r.text.strip()
                 )
 
             sys.exit(1)
