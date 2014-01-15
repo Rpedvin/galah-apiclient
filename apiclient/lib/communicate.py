@@ -500,7 +500,7 @@ class APIClientSession:
             else:
                 logger.critical(
                     "The server returned an error of type '%s'. The server "
-                    "sent back:\n%s", r.headers["X-CallSuccess"],
+                    "sent back:\n%s", r.headers["X-ErrorType"],
                     r.text.strip()
                 )
 
