@@ -28,7 +28,7 @@ setup(
     },
     install_requires = [
         "rauth==0.5.4",
-        "PyYAML==3.10"
+        "PyYAML>=4.2b1"
     ],
     classifiers = [
         "License :: OSI Approved :: Apache Software License",
